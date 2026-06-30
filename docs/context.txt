@@ -1,0 +1,67 @@
+﻿# Contexte du projet : World Engine
+
+Je souhaite développer un moteur de simulation réutilisable nommé provisoirement **World Engine**. Ce moteur ne dépend d'aucun jeu spécifique. Il servira de base à plusieurs jeux, dont un premier projet appelé **Project Isekai**.
+
+La philosophie est la suivante :
+
+* Le monde ne triche jamais avec ses règles.
+* Les mêmes règles s'appliquent au joueur, aux PNJ, aux animaux et aux objets.
+* Le gameplay doit émerger des systèmes du monde, et non de règles arbitraires.
+* Le moteur ne doit contenir aucun gameplay spécifique (pas de "Stone Axe", "Castle", "Laser Gun"...).
+* Le moteur manipule uniquement des concepts universels.
+
+Ces concepts sont notamment :
+
+* Entités
+* Composants
+* Systèmes
+* Temps
+* Évènements
+* Matériaux
+* Corps
+* Blessures
+* Température
+* Besoins
+* Connaissances
+* Assemblages
+* Construction
+
+Le moteur doit être entièrement data-driven.
+
+Les matériaux, objets, parties du corps, connaissances, etc. devront être définis dans des fichiers de données (JSON dans un premier temps).
+
+Le moteur sera indépendant de Unity et Unreal.
+
+Unity ou Unreal ne seront que des couches d'affichage et d'interaction.
+
+Architecture cible :
+
+Unity / Unreal
+↓
+Game Layer
+↓
+World Engine
+↓
+Data
+
+Le World Engine est le "backend" du monde.
+
+Le moteur devra être développé progressivement.
+
+Je ne cherche pas à créer immédiatement un jeu.
+
+Je cherche d'abord à créer une architecture de simulation solide qui pourra évoluer pendant plusieurs années.
+
+Je privilégie :
+
+* une architecture claire ;
+* un faible couplage ;
+* une forte cohérence ;
+* des systèmes indépendants ;
+* une excellente testabilité.
+
+Je préfère une architecture simple et robuste plutôt qu'une architecture extrêmement abstraite.
+
+L'objectif est que de nouveaux systèmes puissent être ajoutés sans modifier les systèmes existants.
+
+Le moteur devra pouvoir être utilisé dans différents univers (âge de pierre, médiéval, futuriste...) simplement en changeant les données et les modules spécifiques.
