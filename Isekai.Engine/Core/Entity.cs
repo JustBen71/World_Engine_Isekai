@@ -1,4 +1,5 @@
 using Isekai.Engine.Core.Component;
+using Isekai.Engine.Diagnostics;
 using Isekai.Engine.Exceptions;
 using Isekai.Engine.Interfaces;
 
@@ -10,13 +11,25 @@ namespace Isekai.Engine.Core;
 public sealed class Entity : IEntity
 {
     private readonly Dictionary<Type, IComponent> _components = new();
+    private readonly ITraceLogger _traceLogger;
 
     /// <summary>
     /// Creates an entity with the provided identifier.
     /// </summary>
     public Entity(EntityId id)
+        : this(id, NoOpTraceLogger.Instance)
+    {
+    }
+
+    /// <summary>
+    /// Creates an entity with the provided identifier and diagnostic logger.
+    /// </summary>
+    public Entity(EntityId id, ITraceLogger traceLogger)
     {
         Id = id;
+        _traceLogger = traceLogger ?? NoOpTraceLogger.Instance;
+
+        using var trace = _traceLogger.BeginScope("Entity.ctor");
     }
 
     /// <inheritdoc />
@@ -29,9 +42,12 @@ public sealed class Entity : IEntity
     public void AddComponent<TComponent>(TComponent component)
         where TComponent : IComponent
     {
+        using var trace = _traceLogger.BeginScope("Entity.AddComponent");
         ArgumentNullException.ThrowIfNull(component);
 
         var componentType = typeof(TComponent);
+        _traceLogger.Write($"ComponentType: {componentType.Name}");
+
         if (_components.ContainsKey(componentType))
         {
             throw new ComponentAlreadyExistsException(Id, componentType);
@@ -44,6 +60,7 @@ public sealed class Entity : IEntity
     public bool HasComponent<TComponent>()
         where TComponent : IComponent
     {
+        using var trace = _traceLogger.BeginScope("Entity.HasComponent");
         return _components.ContainsKey(typeof(TComponent));
     }
 
@@ -51,6 +68,7 @@ public sealed class Entity : IEntity
     public TComponent GetComponent<TComponent>()
         where TComponent : IComponent
     {
+        using var trace = _traceLogger.BeginScope("Entity.GetComponent");
         var componentType = typeof(TComponent);
         if (!_components.TryGetValue(componentType, out var component))
         {
@@ -64,6 +82,7 @@ public sealed class Entity : IEntity
     public bool TryGetComponent<TComponent>(out TComponent? component)
         where TComponent : IComponent
     {
+        using var trace = _traceLogger.BeginScope("Entity.TryGetComponent");
         if (_components.TryGetValue(typeof(TComponent), out var value))
         {
             component = (TComponent)value;
@@ -78,6 +97,7 @@ public sealed class Entity : IEntity
     public bool RemoveComponent<TComponent>()
         where TComponent : IComponent
     {
+        using var trace = _traceLogger.BeginScope("Entity.RemoveComponent");
         return _components.Remove(typeof(TComponent));
     }
 }

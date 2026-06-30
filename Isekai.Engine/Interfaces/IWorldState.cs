@@ -1,4 +1,6 @@
 using Isekai.Engine.Core;
+using Isekai.Engine.Core.Component;
+using Isekai.Engine.Core.Definitions;
 using Isekai.Engine.Core.System;
 
 namespace Isekai.Engine.Interfaces;
@@ -29,9 +31,34 @@ public interface IWorldState
     EventBus EventBus { get; }
 
     /// <summary>
+    /// Gets the data definitions available to this world.
+    /// </summary>
+    DefinitionRegistry Definitions { get; }
+
+    /// <summary>
+    /// Returns true while the world is executing a tick.
+    /// Structural entity mutations requested during this period are deferred until the tick ends.
+    /// </summary>
+    bool IsTicking { get; }
+
+    /// <summary>
     /// Creates and registers a new entity.
+    /// When called during a tick, the entity is created immediately but registered after all systems finish.
     /// </summary>
     Entity CreateEntity();
+
+    /// <summary>
+    /// Gets all entities that own a component of the requested type.
+    /// </summary>
+    IReadOnlyCollection<Entity> EntitiesWith<TComponent>()
+        where TComponent : IComponent;
+
+    /// <summary>
+    /// Gets all entities that own both requested component types.
+    /// </summary>
+    IReadOnlyCollection<Entity> EntitiesWith<TComponentA, TComponentB>()
+        where TComponentA : IComponent
+        where TComponentB : IComponent;
 
     /// <summary>
     /// Returns true when the world contains the requested entity.
@@ -50,16 +77,19 @@ public interface IWorldState
 
     /// <summary>
     /// Removes an entity from the world.
+    /// When called during a tick, the removal is deferred until after all systems finish.
     /// </summary>
     bool RemoveEntity(EntityId entityId);
 
     /// <summary>
     /// Registers a system to be executed on each tick.
+    /// Systems must be registered outside the tick loop.
     /// </summary>
     void RegisterSystem(IWorldSystem system);
 
     /// <summary>
     /// Executes one deterministic simulation tick.
+    /// Systems run in registration order and observe a stable entity set for the whole tick.
     /// </summary>
     TickResult Tick(TimeSpan deltaTime);
 }

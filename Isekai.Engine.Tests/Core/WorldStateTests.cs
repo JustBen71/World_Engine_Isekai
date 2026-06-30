@@ -49,4 +49,37 @@ public sealed class WorldStateTests
         Assert.True(world.GetEntity(entity.Id).HasComponent<TestComponent>());
         Assert.True(world.GetEntity(entity.Id).HasComponent<SecondTestComponent>());
     }
+
+    [Fact]
+    public void EntitiesWith_ReturnsEntitiesThatOwnRequestedComponent()
+    {
+        var world = new WorldState();
+        var matchingEntity = world.CreateEntity();
+        var ignoredEntity = world.CreateEntity();
+
+        matchingEntity.AddComponent(new TestComponent(10));
+        ignoredEntity.AddComponent(new SecondTestComponent("neutral"));
+
+        var result = world.EntitiesWith<TestComponent>();
+
+        Assert.Single(result);
+        Assert.Same(matchingEntity, result.Single());
+    }
+
+    [Fact]
+    public void EntitiesWithTwoComponents_ReturnsEntitiesThatOwnBothComponents()
+    {
+        var world = new WorldState();
+        var matchingEntity = world.CreateEntity();
+        var ignoredEntity = world.CreateEntity();
+
+        matchingEntity.AddComponent(new TestComponent(10));
+        matchingEntity.AddComponent(new SecondTestComponent("neutral"));
+        ignoredEntity.AddComponent(new TestComponent(20));
+
+        var result = world.EntitiesWith<TestComponent, SecondTestComponent>();
+
+        Assert.Single(result);
+        Assert.Same(matchingEntity, result.Single());
+    }
 }

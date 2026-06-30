@@ -12,7 +12,8 @@ public interface IEventBus
         where TEvent : notnull;
 
     /// <summary>
-    /// Publishes an event to all handlers registered for its type.
+    /// Publishes an event to handlers registered for its type.
+    /// The owning world may queue the event during a tick and dispatch it at the deterministic end-of-tick phase.
     /// </summary>
     void Publish<TEvent>(TEvent worldEvent)
         where TEvent : notnull;
