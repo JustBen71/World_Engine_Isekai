@@ -1,0 +1,224 @@
+{
+  "entities": [
+    {
+      "name": "Eau",
+      "glyph": "\ud83d\udca7",
+      "material": "material.water",
+      "volume": 1.25,
+      "position": { "x": 2, "y": 2 },
+      "velocity": { "deltaX": 1, "deltaY": 0 },
+      "temperature": 15.0
+    },
+    {
+      "name": "Fer",
+      "glyph": "\u2699\ufe0f",
+      "material": "material.iron",
+      "volume": 0.25,
+      "position": { "x": 12, "y": 5 },
+      "velocity": { "deltaX": -1, "deltaY": 0 },
+      "temperature": 12.0
+    },
+    {
+      "name": "Pierre",
+      "glyph": "\ud83e\udea8",
+      "material": "material.stone",
+      "volume": 0.5,
+      "position": { "x": 8, "y": 7 },
+      "velocity": { "deltaX": 0, "deltaY": -1 },
+      "temperature": 11.0
+    },
+    {
+      "name": "Arbre",
+      "glyph": "\ud83c\udf33",
+      "material": "material.wood",
+      "body": "body.tree.simple",
+      "volume": 3.0,
+      "position": { "x": 5, "y": 3 },
+      "temperature": 18.0,
+      "impactResistance": {
+        "hardness": 0.8,
+        "toughness": 1.2,
+        "fractureResistance": 0.9
+      },
+      "injuries": [
+        {
+          "injury": "injury.generic.wood_crack",
+          "bodyPart": "trunk",
+          "severity": 0.4
+        }
+      ]
+    },
+    {
+      "name": "Humain",
+      "glyph": "\ud83e\uddcd",
+      "material": "material.flesh",
+      "body": "body.human.basic",
+      "volume": 0.075,
+      "position": { "x": 3, "y": 4 },
+      "velocity": { "deltaX": 1, "deltaY": 0 },
+      "temperature": 36.8,
+      "thermalSensitivity": {
+        "comfortableMinimum": 36.0,
+        "comfortableMaximum": 38.0
+      },
+      "blood": {
+        "currentVolumeLiters": 5.0,
+        "maxVolumeLiters": 5.0
+      },
+      "naturalRecovery": {
+        "tissueRecoveryPerSecond": 0.001,
+        "bleedingRecoveryPerSecond": 0.002
+      },
+      "injuries": [
+        {
+          "injury": "injury.generic.deep_cut",
+          "bodyPart": "left_arm",
+          "severity": 0.3,
+          "bleedingSeverity": "Moderate"
+        }
+      ]
+    },
+    {
+      "name": "Cerf",
+      "glyph": "\ud83e\udd8c",
+      "material": "material.flesh",
+      "body": "body.deer.basic",
+      "volume": 0.055,
+      "position": { "x": 14, "y": 2 },
+      "velocity": { "deltaX": -1, "deltaY": 1 },
+      "temperature": 38.2,
+      "thermalSensitivity": {
+        "comfortableMinimum": 37.0,
+        "comfortableMaximum": 39.5
+      },
+      "blood": {
+        "currentVolumeLiters": 4.0,
+        "maxVolumeLiters": 4.0
+      },
+      "naturalRecovery": {
+        "tissueRecoveryPerSecond": 0.01,
+        "bleedingRecoveryPerSecond": 0.02
+      },
+      "injuries": [
+        {
+          "injury": "injury.generic.tissue_damage",
+          "bodyPart": "front_legs",
+          "severity": 0.2,
+          "bleedingSeverity": "Minor"
+        }
+      ]
+    },
+    {
+      "name": "Os long",
+      "glyph": "\ud83e\uddb4",
+      "material": "material.bone",
+      "body": "body.tool.bone_handle",
+      "volume": 0.001,
+      "temperature": 18.0
+    },
+    {
+      "name": "Silex taille",
+      "glyph": "\ud83e\udea8",
+      "material": "material.flint",
+      "body": "body.tool.flint_head",
+      "volume": 0.0003,
+      "temperature": 18.0,
+      "contactSurface": {
+        "hardness": 1.2,
+        "sharpness": 1.8,
+        "penetration": 1.4,
+        "edgeRetention": 0.5,
+        "contactArea": 0.012
+      }
+    },
+    {
+      "name": "Liane jungle",
+      "glyph": "\ud83e\uddf5",
+      "material": "material.vine",
+      "body": "body.tool.vine_binding",
+      "volume": 0.00005,
+      "temperature": 18.0
+    },
+    {
+      "name": "Manche chene",
+      "glyph": "\ud83e\udeb5",
+      "material": "material.oak",
+      "body": "body.tool.oak_handle",
+      "volume": 0.001,
+      "temperature": 18.0
+    },
+    {
+      "name": "Tete acier",
+      "glyph": "\u2699\ufe0f",
+      "material": "material.steel",
+      "body": "body.tool.steel_head",
+      "volume": 0.0002,
+      "temperature": 18.0,
+      "contactSurface": {
+        "hardness": 2.0,
+        "sharpness": 2.4,
+        "penetration": 1.8,
+        "edgeRetention": 2.5,
+        "contactArea": 0.01
+      }
+    },
+    {
+      "name": "Hache os-silex",
+      "glyph": "\ud83e\ude93",
+      "materials": [],
+      "position": { "x": 20, "y": 4 },
+      "temperature": 18.0,
+      "impact": {
+        "contactEntity": "Silex taille",
+        "targetEntity": "Arbre",
+        "force": 45,
+        "targetBodyPart": "trunk"
+      },
+      "composite": {
+        "parts": [
+          {
+            "role": "body",
+            "entity": "Os long",
+            "isStructural": true
+          },
+          {
+            "role": "head",
+            "entity": "Silex taille",
+            "isStructural": true
+          },
+          {
+            "role": "binding",
+            "entity": "Liane jungle",
+            "isStructural": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "Hache acier-chene",
+      "glyph": "\ud83e\ude93",
+      "materials": [
+        {
+          "material": "material.iron",
+          "volume": 0.00003
+        }
+      ],
+      "position": { "x": 22, "y": 4 },
+      "temperature": 18.0,
+      "composite": {
+        "parts": [
+          {
+            "role": "handle",
+            "entity": "Manche chene",
+            "isStructural": true
+          },
+          {
+            "role": "head",
+            "entity": "Tete acier",
+            "isStructural": true
+          }
+        ]
+      }
+    }
+  ]
+}

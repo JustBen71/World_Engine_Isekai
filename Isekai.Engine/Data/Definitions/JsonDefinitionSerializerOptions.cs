@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Isekai.Engine.Data.Definitions;
 
@@ -19,6 +20,7 @@ public static class JsonDefinitionSerializerOptions
             AllowTrailingCommas = true
         };
 
+        options.Converters.Add(new JsonStringEnumConverter());
         options.Converters.Add(new DefinitionIdJsonConverter());
         options.Converters.Add(new DefinitionReferenceJsonConverterFactory());
         return options;

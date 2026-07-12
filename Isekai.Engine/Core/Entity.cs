@@ -57,6 +57,19 @@ public sealed class Entity : IEntity
     }
 
     /// <inheritdoc />
+    public void SetComponent<TComponent>(TComponent component)
+        where TComponent : IComponent
+    {
+        using var trace = _traceLogger.BeginScope("Entity.SetComponent");
+        ArgumentNullException.ThrowIfNull(component);
+
+        var componentType = typeof(TComponent);
+        _traceLogger.Write($"ComponentType: {componentType.Name}");
+
+        _components[componentType] = component;
+    }
+
+    /// <inheritdoc />
     public bool HasComponent<TComponent>()
         where TComponent : IComponent
     {

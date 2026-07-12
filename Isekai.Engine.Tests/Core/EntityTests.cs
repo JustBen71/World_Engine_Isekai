@@ -40,4 +40,16 @@ public sealed class EntityTests
 
         Assert.Throws<ComponentAlreadyExistsException>(() => entity.AddComponent(new TestComponent(2)));
     }
+
+    [Fact]
+    public void SetComponent_AddsOrReplacesDataComponent()
+    {
+        var entity = new Entity(EntityId.New());
+
+        entity.SetComponent(new TestComponent(1));
+        entity.SetComponent(new TestComponent(2));
+
+        Assert.Single(entity.Components);
+        Assert.Equal(2, entity.GetComponent<TestComponent>().Value);
+    }
 }

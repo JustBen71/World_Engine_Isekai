@@ -1,0 +1,158 @@
+{
+  "definitions": [
+    {
+      "type": "body.definition",
+      "id": "body.tree.simple",
+      "parts": [
+        {
+          "id": "trunk",
+          "name": "Trunk",
+          "material": "material.wood",
+          "maxIntegrity": 120
+        },
+        {
+          "id": "branches",
+          "name": "Branches",
+          "material": "material.wood",
+          "maxIntegrity": 60
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
+      "id": "body.human.basic",
+      "parts": [
+        {
+          "id": "head",
+          "name": "Head",
+          "material": "material.flesh",
+          "maxIntegrity": 35,
+          "vitalRole": "brain"
+        },
+        {
+          "id": "torso",
+          "name": "Torso",
+          "material": "material.flesh",
+          "maxIntegrity": 100,
+          "vitalRole": "heart"
+        },
+        {
+          "id": "left_arm",
+          "name": "Left arm",
+          "material": "material.flesh",
+          "maxIntegrity": 45
+        },
+        {
+          "id": "right_arm",
+          "name": "Right arm",
+          "material": "material.flesh",
+          "maxIntegrity": 45
+        },
+        {
+          "id": "left_leg",
+          "name": "Left leg",
+          "material": "material.flesh",
+          "maxIntegrity": 60
+        },
+        {
+          "id": "right_leg",
+          "name": "Right leg",
+          "material": "material.flesh",
+          "maxIntegrity": 60
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
+      "id": "body.deer.basic",
+      "parts": [
+        {
+          "id": "head",
+          "name": "Head",
+          "material": "material.flesh",
+          "maxIntegrity": 30,
+          "vitalRole": "brain"
+        },
+        {
+          "id": "torso",
+          "name": "Torso",
+          "material": "material.flesh",
+          "maxIntegrity": 90,
+          "vitalRole": "heart"
+        },
+        {
+          "id": "front_legs",
+          "name": "Front legs",
+          "material": "material.flesh",
+          "maxIntegrity": 70
+        },
+        {
+          "id": "rear_legs",
+          "name": "Rear legs",
+          "material": "material.flesh",
+          "maxIntegrity": 70
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
+      "id": "body.tool.bone_handle",
+      "parts": [
+        {
+          "id": "core",
+          "name": "Core",
+          "material": "material.bone",
+          "maxIntegrity": 45
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
+      "id": "body.tool.flint_head",
+      "parts": [
+        {
+          "id": "edge",
+          "name": "Edge",
+          "material": "material.flint",
+          "maxIntegrity": 35
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
+      "id": "body.tool.vine_binding",
+      "parts": [
+        {
+          "id": "fiber",
+          "name": "Fiber",
+          "material": "material.vine",
+          "maxIntegrity": 25
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
+      "id": "body.tool.oak_handle",
+      "parts": [
+        {
+          "id": "core",
+          "name": "Core",
+          "material": "material.oak",
+          "maxIntegrity": 70
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
+      "id": "body.tool.steel_head",
+      "parts": [
+        {
+          "id": "edge",
+          "name": "Edge",
+          "material": "material.steel",
+          "maxIntegrity": 120
+        }
+      ]
+    }
+  ]
+}

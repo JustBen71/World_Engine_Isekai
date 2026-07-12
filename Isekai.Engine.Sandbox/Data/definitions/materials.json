@@ -1,0 +1,74 @@
+{
+  "definitions": [
+    {
+      "type": "material.definition",
+      "id": "material.water",
+      "density": 1000,
+      "specificHeatCapacity": 4200,
+      "thermalConductivity": 0.6
+    },
+    {
+      "type": "material.definition",
+      "id": "material.iron",
+      "density": 7870,
+      "specificHeatCapacity": 450,
+      "thermalConductivity": 80
+    },
+    {
+      "type": "material.definition",
+      "id": "material.stone",
+      "density": 2600,
+      "specificHeatCapacity": 790,
+      "thermalConductivity": 2.5
+    },
+    {
+      "type": "material.definition",
+      "id": "material.wood",
+      "density": 700,
+      "specificHeatCapacity": 1700,
+      "thermalConductivity": 0.12
+    },
+    {
+      "type": "material.definition",
+      "id": "material.oak",
+      "density": 760,
+      "specificHeatCapacity": 1700,
+      "thermalConductivity": 0.17
+    },
+    {
+      "type": "material.definition",
+      "id": "material.bone",
+      "density": 1900,
+      "specificHeatCapacity": 1300,
+      "thermalConductivity": 0.35
+    },
+    {
+      "type": "material.definition",
+      "id": "material.flint",
+      "density": 2650,
+      "specificHeatCapacity": 750,
+      "thermalConductivity": 1.4
+    },
+    {
+      "type": "material.definition",
+      "id": "material.vine",
+      "density": 450,
+      "specificHeatCapacity": 1800,
+      "thermalConductivity": 0.08
+    },
+    {
+      "type": "material.definition",
+      "id": "material.steel",
+      "density": 7850,
+      "specificHeatCapacity": 490,
+      "thermalConductivity": 45
+    },
+    {
+      "type": "material.definition",
+      "id": "material.flesh",
+      "density": 985,
+      "specificHeatCapacity": 3500,
+      "thermalConductivity": 0.5
+    }
+  ]
+}

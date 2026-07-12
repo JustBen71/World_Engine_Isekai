@@ -1,0 +1,32 @@
+{
+  "definitions": [
+    {
+      "type": "injury.definition",
+      "id": "injury.generic.tissue_damage",
+      "name": "entaille",
+      "integrityLossPerSeverityPerSecond": 0.35,
+      "defaultBleedingSeverity": "Minor"
+    },
+    {
+      "type": "injury.definition",
+      "id": "injury.generic.fracture",
+      "name": "fracture",
+      "integrityLossPerSeverityPerSecond": 0.05,
+      "defaultBleedingSeverity": "None"
+    },
+    {
+      "type": "injury.definition",
+      "id": "injury.generic.deep_cut",
+      "name": "plaie profonde",
+      "integrityLossPerSeverityPerSecond": 0.45,
+      "defaultBleedingSeverity": "Moderate"
+    },
+    {
+      "type": "injury.definition",
+      "id": "injury.generic.wood_crack",
+      "name": "fissure",
+      "integrityLossPerSeverityPerSecond": 0.2,
+      "defaultBleedingSeverity": "None"
+    }
+  ]
+}

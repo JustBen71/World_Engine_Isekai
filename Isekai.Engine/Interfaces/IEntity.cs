@@ -25,6 +25,12 @@ public interface IEntity
         where TComponent : IComponent;
 
     /// <summary>
+    /// Adds or replaces a component on the entity.
+    /// </summary>
+    void SetComponent<TComponent>(TComponent component)
+        where TComponent : IComponent;
+
+    /// <summary>
     /// Returns true when the entity has a component of the requested type.
     /// </summary>
     bool HasComponent<TComponent>()
