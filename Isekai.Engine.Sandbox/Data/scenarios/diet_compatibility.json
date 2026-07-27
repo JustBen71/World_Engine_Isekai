@@ -1,0 +1,82 @@
+{
+  "entities": [
+    {
+      "name": "Profil A fruit herbe",
+      "glyph": "\ud83e\udd8c",
+      "position": { "x": 3, "y": 2 },
+      "temperature": 20.0,
+      "needs": {
+        "currentEnergy": 0,
+        "maximumEnergy": 100,
+        "energyConsumptionPerSecond": 0,
+        "currentHydration": 0,
+        "maximumHydration": 100,
+        "hydrationConsumptionPerSecond": 0
+      },
+      "diet": {
+        "tagDigestibility": {
+          "grass": 1.0,
+          "fruit": 0.8,
+          "meat": 0.0
+        }
+      },
+      "consumeIntent": {
+        "resourceEntity": "Ressource fruit test",
+        "requestedQuantity": 2,
+        "maximumDistanceMeters": 5
+      }
+    },
+    {
+      "name": "Profil B viande",
+      "glyph": "\ud83d\udc3a",
+      "position": { "x": 5, "y": 2 },
+      "temperature": 20.0,
+      "needs": {
+        "currentEnergy": 0,
+        "maximumEnergy": 100,
+        "energyConsumptionPerSecond": 0,
+        "currentHydration": 0,
+        "maximumHydration": 100,
+        "hydrationConsumptionPerSecond": 0
+      },
+      "diet": {
+        "tagDigestibility": {
+          "grass": 0.0,
+          "fruit": 0.2,
+          "meat": 1.0
+        }
+      },
+      "consumeIntent": {
+        "resourceEntity": "Ressource fruit test",
+        "requestedQuantity": 2,
+        "maximumDistanceMeters": 5
+      }
+    },
+    {
+      "name": "Ressource fruit test",
+      "glyph": "\ud83c\udf53",
+      "position": { "x": 4, "y": 2 },
+      "temperature": 19.0,
+      "consumable": {
+        "definition": "consumable.berries.basic",
+        "currentQuantity": 10,
+        "maximumQuantity": 10,
+        "regenerationPerSecond": 0,
+        "removeEntityWhenEmpty": false
+      }
+    },
+    {
+      "name": "Ressource viande test",
+      "glyph": "\ud83e\udd69",
+      "position": { "x": 6, "y": 2 },
+      "temperature": 19.0,
+      "consumable": {
+        "definition": "consumable.meat.basic",
+        "currentQuantity": 10,
+        "maximumQuantity": 10,
+        "regenerationPerSecond": 0,
+        "removeEntityWhenEmpty": false
+      }
+    }
+  ]
+}

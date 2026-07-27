@@ -1,0 +1,172 @@
+{
+  "entities": [
+    {
+      "name": "Mangeur de baies",
+      "glyph": "\ud83e\uddcd",
+      "position": { "x": 3, "y": 2 },
+      "temperature": 20.0,
+      "needs": {
+        "currentEnergy": 20,
+        "maximumEnergy": 100,
+        "energyConsumptionPerSecond": 1,
+        "currentHydration": 20,
+        "maximumHydration": 100,
+        "hydrationConsumptionPerSecond": 1
+      },
+      "diet": {
+        "tagDigestibility": {
+          "fruit": 1.0,
+          "grass": 0.4,
+          "meat": 0.0
+        }
+      },
+      "consumeIntent": {
+        "resourceEntity": "Buisson ressource baies",
+        "requestedQuantity": 2,
+        "maximumDistanceMeters": 5
+      }
+    },
+    {
+      "name": "Mangeur d'herbe",
+      "glyph": "\ud83e\udd8c",
+      "position": { "x": 5, "y": 2 },
+      "temperature": 20.0,
+      "needs": {
+        "currentEnergy": 15,
+        "maximumEnergy": 100,
+        "energyConsumptionPerSecond": 1,
+        "currentHydration": 30,
+        "maximumHydration": 100,
+        "hydrationConsumptionPerSecond": 1
+      },
+      "diet": {
+        "tagDigestibility": {
+          "fruit": 0.8,
+          "grass": 1.0,
+          "meat": 0.0
+        }
+      },
+      "consumeIntent": {
+        "resourceEntity": "Cellule herbe consommable",
+        "requestedQuantity": 3,
+        "maximumDistanceMeters": 5
+      }
+    },
+    {
+      "name": "Buveur eau propre",
+      "glyph": "\ud83e\uddcd",
+      "position": { "x": 8, "y": 2 },
+      "temperature": 20.0,
+      "needs": {
+        "currentEnergy": 50,
+        "maximumEnergy": 100,
+        "energyConsumptionPerSecond": 0,
+        "currentHydration": 10,
+        "maximumHydration": 100,
+        "hydrationConsumptionPerSecond": 1
+      },
+      "diet": {
+        "tagDigestibility": {
+          "fruit": 1.0
+        }
+      },
+      "waterTolerance": {
+        "bacterialTolerance": 0.2,
+        "chemicalTolerance": 0.2,
+        "salinityTolerance": 0.2
+      },
+      "drinkIntent": {
+        "sourceEntity": "Source eau propre",
+        "requestedVolumeLiters": 5,
+        "maximumDistanceMeters": 5
+      }
+    },
+    {
+      "name": "Buveur eau contaminee",
+      "glyph": "\ud83e\udd8c",
+      "position": { "x": 12, "y": 2 },
+      "temperature": 20.0,
+      "needs": {
+        "currentEnergy": 50,
+        "maximumEnergy": 100,
+        "energyConsumptionPerSecond": 0,
+        "currentHydration": 10,
+        "maximumHydration": 100,
+        "hydrationConsumptionPerSecond": 1
+      },
+      "diet": {
+        "tagDigestibility": {
+          "grass": 1.0
+        }
+      },
+      "waterTolerance": {
+        "bacterialTolerance": 0.1,
+        "chemicalTolerance": 0.1,
+        "salinityTolerance": 0.1
+      },
+      "drinkIntent": {
+        "sourceEntity": "Mare contaminee",
+        "requestedVolumeLiters": 5,
+        "maximumDistanceMeters": 5
+      }
+    },
+    {
+      "name": "Buisson ressource baies",
+      "glyph": "\ud83c\udf53",
+      "position": { "x": 4, "y": 2 },
+      "temperature": 19.0,
+      "consumable": {
+        "definition": "consumable.berries.basic",
+        "currentQuantity": 30,
+        "maximumQuantity": 30,
+        "regenerationPerSecond": 0.2,
+        "removeEntityWhenEmpty": false
+      }
+    },
+    {
+      "name": "Cellule herbe consommable",
+      "glyph": "\ud83c\udf3e",
+      "position": { "x": 5, "y": 3 },
+      "temperature": 19.0,
+      "consumable": {
+        "definition": "consumable.grass.basic",
+        "currentQuantity": 20,
+        "maximumQuantity": 20,
+        "regenerationPerSecond": 0.1,
+        "removeEntityWhenEmpty": false
+      }
+    },
+    {
+      "name": "Source eau propre",
+      "glyph": "\ud83c\udf0a",
+      "position": { "x": 9, "y": 2 },
+      "temperature": 16.0,
+      "waterSource": {
+        "currentVolumeLiters": 50,
+        "maximumVolumeLiters": 50,
+        "quality": {
+          "bacterialContamination": 0,
+          "chemicalContamination": 0,
+          "salinity": 0
+        },
+        "refillLitersPerSecond": 0.5
+      }
+    },
+    {
+      "name": "Mare contaminee",
+      "glyph": "\ud83c\udf0a",
+      "position": { "x": 13, "y": 2 },
+      "temperature": 18.0,
+      "waterSource": {
+        "currentVolumeLiters": 40,
+        "maximumVolumeLiters": 40,
+        "quality": {
+          "bacterialContamination": 0.7,
+          "chemicalContamination": 0.2,
+          "salinity": 0.4
+        },
+        "refillLitersPerSecond": 0.2
+      }
+    }
+  ]
+}

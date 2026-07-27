@@ -74,7 +74,21 @@ public static class SandboxScenarioRegistry
             "Affiche une grille 10x10, ses altitudes, ses sols et la cellule terrain de quelques entites.",
             "terrain_basic.json",
             5,
-            ShowTerrainDiagnostics: true)
+            ShowTerrainDiagnostics: true),
+        new(
+            "needs-consumption",
+            "Besoins et consommation",
+            "Montre energie, hydratation, baies, herbe, eau propre, eau contaminee et exposition.",
+            "needs_consumption.json",
+            1,
+            ShowNeedsDiagnostics: true),
+        new(
+            "diet-compatibility",
+            "Compatibilite alimentaire",
+            "Compare deux profils alimentaires generiques sur les memes ressources.",
+            "diet_compatibility.json",
+            1,
+            ShowNeedsDiagnostics: true)
     ];
 
     /// <summary>

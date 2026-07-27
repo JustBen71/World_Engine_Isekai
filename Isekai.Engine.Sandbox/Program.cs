@@ -11,6 +11,7 @@ using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
+using Isekai.Engine.Modules.Needs;
 using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
@@ -48,7 +49,17 @@ try
         RenderTerrainDiagnostics(world, terrainService);
     }
 
+    if (scenario.ShowNeedsDiagnostics)
+    {
+        RenderNeedsDiagnostics("Before", world);
+    }
+
     renderer.Run(world, tickCount);
+
+    if (scenario.ShowNeedsDiagnostics)
+    {
+        RenderNeedsDiagnostics("After", world);
+    }
 }
 finally
 {
@@ -119,6 +130,7 @@ static IReadOnlyCollection<IEngineModule> CreateModules(SandboxScenario scenario
         new BodyCapabilitiesModule(),
         new ImpactModule(),
         new TerrainModule(),
+        new NeedsModule(),
         new VitalsModule(),
         new TemperatureModule(ambientProvider)
     };
@@ -211,6 +223,63 @@ static void RenderTerrainDiagnostics(WorldState world, ITerrainService terrainSe
 
         AnsiConsole.MarkupLine(
             $"{Markup.Escape(name)} -> position=({position.X:0.##},{position.Y:0.##},{position.Z:0.##}) cell=({coordinate.X},{coordinate.Y}) elevation={cell.ElevationMeters:0.##}m soil={Markup.Escape(cell.SoilDefinitionId.Value)}");
+    }
+
+    AnsiConsole.WriteLine();
+}
+
+static void RenderNeedsDiagnostics(string label, WorldState world)
+{
+    AnsiConsole.WriteLine();
+    AnsiConsole.MarkupLine($"[bold yellow]Needs diagnostics - {Markup.Escape(label)}[/]");
+
+    foreach (var entity in world.Entities)
+    {
+        if (!entity.TryGetComponent<NameComponent>(out var nameComponent) || nameComponent is null)
+        {
+            continue;
+        }
+
+        var parts = new List<string>();
+        if (entity.TryGetComponent<EnergyNeedComponent>(out var energy) && energy is not null)
+        {
+            parts.Add($"E={energy.CurrentEnergy:0.##}/{energy.MaximumEnergy:0.##}");
+        }
+
+        if (entity.TryGetComponent<HydrationNeedComponent>(out var hydration) && hydration is not null)
+        {
+            parts.Add($"H={hydration.CurrentHydration:0.##}/{hydration.MaximumHydration:0.##}");
+        }
+
+        if (entity.TryGetComponent<ConsumableResourceComponent>(out var consumable) && consumable is not null)
+        {
+            parts.Add($"Food={consumable.CurrentQuantity:0.##}/{consumable.MaximumQuantity:0.##}");
+        }
+
+        if (entity.TryGetComponent<WaterSourceComponent>(out var water) && water is not null)
+        {
+            parts.Add($"Water={water.CurrentVolumeLiters:0.##}/{water.MaximumVolumeLiters:0.##}");
+        }
+
+        if (entity.TryGetComponent<ConsumeActionResultComponent>(out var consumeResult) && consumeResult is not null)
+        {
+            parts.Add($"Consume={consumeResult.Result.Outcome} q={consumeResult.Result.ConsumedQuantity:0.##}");
+        }
+
+        if (entity.TryGetComponent<DrinkActionResultComponent>(out var drinkResult) && drinkResult is not null)
+        {
+            parts.Add($"Drink={drinkResult.Result.Outcome} q={drinkResult.Result.ConsumedVolumeLiters:0.##} exp={drinkResult.Result.BacterialExposure + drinkResult.Result.ChemicalExposure + drinkResult.Result.SalinityExposure:0.##}");
+        }
+
+        if (entity.TryGetComponent<ContaminationExposureComponent>(out var exposure) && exposure is not null)
+        {
+            parts.Add($"Exposures={exposure.Exposures.Count}");
+        }
+
+        if (parts.Count > 0)
+        {
+            AnsiConsole.MarkupLine($"{Markup.Escape(nameComponent.Name)} -> {Markup.Escape(string.Join(" | ", parts))}");
+        }
     }
 
     AnsiConsole.WriteLine();

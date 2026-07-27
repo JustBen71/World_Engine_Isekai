@@ -10,6 +10,7 @@ using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
+using Isekai.Engine.Modules.Needs;
 using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
@@ -66,6 +67,7 @@ public sealed class SandboxEntityLoader
                 AddImpactRequestIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
                 AddHandlingComponentsIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
                 AddBodyImpactIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
+                AddNeedsIntentsIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
                 continue;
             }
 
@@ -73,6 +75,7 @@ public sealed class SandboxEntityLoader
             AddImpactRequestIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
             AddHandlingComponentsIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
             AddBodyImpactIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
+            AddNeedsIntentsIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
         }
     }
 
@@ -196,6 +199,53 @@ public sealed class SandboxEntityLoader
                     surface.EdgeRetention,
                     surface.ContactArea))
                 .ToArray()));
+        }
+
+        if (definition.Needs is not null)
+        {
+            entity.AddComponent(new EnergyNeedComponent(
+                definition.Needs.CurrentEnergy,
+                definition.Needs.MaximumEnergy,
+                definition.Needs.EnergyConsumptionPerSecond));
+            entity.AddComponent(new HydrationNeedComponent(
+                definition.Needs.CurrentHydration,
+                definition.Needs.MaximumHydration,
+                definition.Needs.HydrationConsumptionPerSecond));
+        }
+
+        if (definition.Diet is not null)
+        {
+            entity.AddComponent(new DietComponent(definition.Diet.TagDigestibility));
+        }
+
+        if (definition.WaterTolerance is not null)
+        {
+            entity.AddComponent(new WaterToleranceComponent(
+                definition.WaterTolerance.BacterialTolerance,
+                definition.WaterTolerance.ChemicalTolerance,
+                definition.WaterTolerance.SalinityTolerance));
+        }
+
+        if (definition.Consumable is not null)
+        {
+            entity.AddComponent(new ConsumableResourceComponent(
+                DefinitionReference<ConsumableDefinition>.From(definition.Consumable.Definition),
+                definition.Consumable.CurrentQuantity,
+                definition.Consumable.MaximumQuantity,
+                definition.Consumable.RegenerationPerSecond,
+                definition.Consumable.RemoveEntityWhenEmpty));
+        }
+
+        if (definition.WaterSource is not null)
+        {
+            entity.AddComponent(new WaterSourceComponent(
+                definition.WaterSource.CurrentVolumeLiters,
+                definition.WaterSource.MaximumVolumeLiters,
+                new WaterQuality(
+                    definition.WaterSource.Quality.BacterialContamination,
+                    definition.WaterSource.Quality.ChemicalContamination,
+                    definition.WaterSource.Quality.Salinity),
+                definition.WaterSource.RefillLitersPerSecond));
         }
 
         return entity;
@@ -361,5 +411,39 @@ public sealed class SandboxEntityLoader
             definition.BodyImpact.TicksRemaining,
             definition.BodyImpact.TicksBetweenImpacts,
             TargetBodyPartId: definition.BodyImpact.TargetBodyPart));
+    }
+
+    private static void AddNeedsIntentsIfNeeded(
+        Entity entity,
+        SandboxEntityDefinition definition,
+        IReadOnlyDictionary<string, Entity> entitiesByName)
+    {
+        if (definition.ConsumeIntent is not null)
+        {
+            if (!entitiesByName.TryGetValue(definition.ConsumeIntent.ResourceEntity, out var resourceEntity))
+            {
+                throw new InvalidOperationException($"Consume intent resource '{definition.ConsumeIntent.ResourceEntity}' could not be resolved.");
+            }
+
+            entity.AddComponent(new ConsumeIntentComponent(new ConsumeIntent(
+                entity.Id,
+                resourceEntity.Id,
+                definition.ConsumeIntent.RequestedQuantity,
+                definition.ConsumeIntent.MaximumDistanceMeters)));
+        }
+
+        if (definition.DrinkIntent is not null)
+        {
+            if (!entitiesByName.TryGetValue(definition.DrinkIntent.SourceEntity, out var sourceEntity))
+            {
+                throw new InvalidOperationException($"Drink intent source '{definition.DrinkIntent.SourceEntity}' could not be resolved.");
+            }
+
+            entity.AddComponent(new DrinkFromEntityIntentComponent(new DrinkFromEntityIntent(
+                entity.Id,
+                sourceEntity.Id,
+                definition.DrinkIntent.RequestedVolumeLiters,
+                definition.DrinkIntent.MaximumDistanceMeters)));
+        }
     }
 }

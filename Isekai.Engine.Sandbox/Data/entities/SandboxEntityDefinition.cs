@@ -27,4 +27,11 @@ public sealed record SandboxEntityDefinition(
     SandboxHandledImpactData? HandledImpact,
     SandboxBodyImpactCapabilityData? BodyImpactCapability,
     SandboxBodyContactSurfaceData[]? BodyContactSurfaces,
-    SandboxBodyImpactData? BodyImpact);
+    SandboxBodyImpactData? BodyImpact,
+    SandboxNeedsData? Needs,
+    SandboxDietData? Diet,
+    SandboxWaterToleranceData? WaterTolerance,
+    SandboxConsumableResourceData? Consumable,
+    SandboxWaterSourceData? WaterSource,
+    SandboxConsumeIntentData? ConsumeIntent,
+    SandboxDrinkIntentData? DrinkIntent);

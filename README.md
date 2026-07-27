@@ -42,6 +42,7 @@ Isekai.Engine/
     Healing/
     Injuries/
     Materials/
+    Needs/
     Temperature/
     Terrain/
     Vitals/
@@ -86,7 +87,7 @@ Configurations disponibles :
 Resultat attendu :
 
 ```text
-165 tests passed
+191 tests passed
 0 failed
 ```
 
@@ -143,6 +144,8 @@ composite-wear      Usure composite
 thermal-materials   Materiaux et temperature
 thermal-zones       Zones thermiques locales
 terrain-basic       Terrain de base
+needs-consumption   Besoins et consommation
+diet-compatibility  Compatibilite alimentaire
 ```
 
 La sandbox charge :
@@ -151,6 +154,8 @@ La sandbox charge :
 Isekai.Engine.Sandbox/Data/definitions/materials.json
 Isekai.Engine.Sandbox/Data/definitions/bodies.json
 Isekai.Engine.Sandbox/Data/definitions/injuries.json
+Isekai.Engine.Sandbox/Data/definitions/terrain.json
+Isekai.Engine.Sandbox/Data/definitions/needs.json
 Isekai.Engine.Sandbox/Data/scenarios/*.json
 ```
 
@@ -445,6 +450,7 @@ Modules actuels :
 - `ImpactModule`
 - `InjuryModule`
 - `MaterialModule`
+- `NeedsModule`
 - `TemperatureModule`
 - `TerrainModule`
 - `VitalsModule`
@@ -705,6 +711,93 @@ Types principaux :
 - `NaturalRecoverySystem` : reduit les blessures selon les capacites naturelles de l'entite.
 - `TreatmentSystem` : applique un soin externe depuis une entite soigneuse vers une cible.
 
+## Module Needs
+
+Le module `Needs` modelise les besoins internes simples et les ressources consommables.
+Il ne connait pas les especes, les humains, les cerfs, les loups, les baies, les mares ou les rivieres en dur.
+
+Responsabilites :
+
+- `EnergyNeedComponent` : reserve d'energie, maximum = plein, zero = epuise.
+- `HydrationNeedComponent` : reserve d'hydratation, maximum = plein, zero = epuise.
+- `ConsumableDefinition` : nutrition data-driven par unite.
+- `ConsumableResourceComponent` : stock consommable porte par une entite.
+- `DietComponent` : digestibilite par tag generique.
+- `WaterSourceComponent` : stock d'eau porte par une entite.
+- `WaterQuality` : contamination bacterienne, chimique et salinite entre 0 et 1.
+- `WaterToleranceComponent` : tolerance d'une entite a ces contaminations.
+- `ContaminationExposureComponent` : exposition produite, sans maladie complete.
+- `TerrainBiomassLayer` : biomasse consommable par cellule de terrain.
+- `TerrainWaterLayer` : eau disponible par cellule de terrain.
+
+Flux recommande :
+
+```text
+Need decreases
+      v
+Controller produces intent
+      v
+Consume/Drink Action System
+      v
+Resource quantity decreases
+      v
+Energy/Hydration increases
+      v
+Optional contamination exposure
+```
+
+Les besoins passifs diminuent selon :
+
+```text
+PassiveConsumptionPerSecond * deltaTime
+```
+
+Les reserves sont toujours bornees entre `0` et leur maximum.
+Atteindre zero ne tue pas encore l'entite : la mort par faim, soif ou maladie sera traitee par de futurs modules.
+
+La digestibilite est calculee par tags :
+
+```text
+digestibility = meilleure digestibilite explicite d'un tag de la ressource
+si aucun tag n'est connu par le regime, fallback = DefaultDigestibility
+si un tag est connu a 0, la ressource est refusee
+```
+
+Les gains sont simples et deterministes :
+
+```text
+energyReceived = quantity * EnergyPerUnit * digestibility
+hydrationReceived = quantity * HydrationPerUnit * digestibility
+```
+
+L'exposition a l'eau contaminee est seulement stockee pour un futur module `Disease` :
+
+```text
+exposure = max(0, contamination - tolerance) * consumedVolume
+```
+
+Une ressource n'a pas besoin de `BodyComponent`.
+Un buisson, un fruit isole, une reserve de nourriture ou une source d'eau peuvent etre de simples entites avec un stock.
+L'herbe n'est pas une entite par brin : elle peut etre representee par `TerrainBiomassLayer` sur des cellules.
+
+Comportement des ressources epuisees :
+
+- par defaut, l'entite reste avec une quantite a zero, utile pour les sources regenerables ;
+- si `RemoveEntityWhenEmpty` vaut `true`, la suppression est demandee via les mutations differees du `WorldState`.
+
+Systemes enregistres par `NeedsModule` :
+
+```text
+EnergyNeedSystem
+HydrationNeedSystem
+ConsumableRegenerationSystem
+WaterSourceRefillSystem
+ConsumeActionSystem
+DrinkActionSystem
+```
+
+Les scenarios sandbox `needs-consumption` et `diet-compatibility` montrent la consommation de nourriture, l'eau propre, l'eau contaminee, les expositions et des regimes differents.
+
 ## Module Terrain
 
 Le module `Terrain` modelise la structure spatiale persistante du monde.
@@ -835,6 +928,52 @@ Le moteur calcule alors un `ThermalComfortComponent`.
 
 La temperature ambiante peut venir du composant global existant ou, plus tard, d'un provider spatial qui lit la position d'une entite puis demande la temperature de la cellule correspondante.
 Le module ne connait pas les biomes, le climat, les saisons, le jour/nuit, l'altitude ou l'humidite.
+
+### Fournisseur de temperature ambiante
+
+`TemperatureExchangeSystem` ne lit plus directement l'ambiance dans le monde.
+Il demande toujours l'ambiance a un `IAmbientTemperatureProvider` :
+
+```csharp
+public interface IAmbientTemperatureProvider
+{
+    double GetAmbientTemperatureCelsius(IWorldState world, Entity entity);
+}
+```
+
+Le provider par defaut est `ComponentAmbientTemperatureProvider`.
+Il conserve le comportement historique :
+
+```text
+AmbientTemperatureComponent present
+  -> utilise sa temperature en Celsius
+
+AmbientTemperatureComponent absent
+  -> utilise le fallback configure, 20 C par defaut
+
+AmbientTemperatureComponent invalide, NaN ou infini
+  -> utilise aussi le fallback
+```
+
+Un systeme ou une sandbox peut fournir un autre provider sans modifier `TemperatureExchangeSystem`.
+Cela permet deja d'avoir deux entites dans deux ambiances differentes pendant le meme tick.
+
+Branchement attendu avec `Terrain` :
+
+```text
+Entity PositionComponent
+        v
+TerrainService
+        v
+TerrainCellCoordinate
+        v
+Custom AmbientTemperatureProvider
+        v
+TemperatureExchangeSystem
+```
+
+`Terrain` ne calcule pas la temperature et ne stocke pas de temperature corporelle.
+Il fournit seulement la position et la cellule. Le provider ambiant, ou plus tard un module `Climate`, traduira cette cellule en temperature ambiante locale.
 
 ## Regles de mutation pendant un Tick
 

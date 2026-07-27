@@ -1,0 +1,34 @@
+{
+  "definitions": [
+    {
+      "type": "needs.consumable",
+      "id": "consumable.berries.basic",
+      "displayName": "Basic berries",
+      "tags": [ "plant", "fruit", "berries" ],
+      "energyPerUnit": 12.0,
+      "hydrationPerUnit": 4.0,
+      "toxicityPerUnit": 0.0,
+      "defaultDigestibility": 0.8
+    },
+    {
+      "type": "needs.consumable",
+      "id": "consumable.grass.basic",
+      "displayName": "Basic grass",
+      "tags": [ "plant", "grass" ],
+      "energyPerUnit": 4.0,
+      "hydrationPerUnit": 1.0,
+      "toxicityPerUnit": 0.0,
+      "defaultDigestibility": 0.6
+    },
+    {
+      "type": "needs.consumable",
+      "id": "consumable.meat.basic",
+      "displayName": "Basic meat",
+      "tags": [ "animal", "meat" ],
+      "energyPerUnit": 20.0,
+      "hydrationPerUnit": 1.0,
+      "toxicityPerUnit": 0.0,
+      "defaultDigestibility": 0.7
+    }
+  ]
+}

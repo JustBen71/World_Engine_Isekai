@@ -11,6 +11,7 @@ using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
+using Isekai.Engine.Modules.Needs;
 using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
@@ -193,6 +194,36 @@ public sealed class SandboxScenarioRegressionTests
         Assert.Equal(new TerrainCellCoordinate(1, 1), terrainService.GetCellAt(position.Position));
     }
 
+    [Fact]
+    public void NeedsConsumptionScenario_ConsumesFoodWaterAndCreatesExposure()
+    {
+        var world = CreateScenarioWorld("needs_consumption.json");
+
+        Tick(world, 1);
+
+        Assert.Equal(ConsumeOutcome.Success, FindByName(world, "Mangeur de baies").GetComponent<ConsumeActionResultComponent>().Result.Outcome);
+        Assert.Equal(ConsumeOutcome.Success, FindByName(world, "Mangeur d'herbe").GetComponent<ConsumeActionResultComponent>().Result.Outcome);
+        Assert.Equal(DrinkOutcome.Success, FindByName(world, "Buveur eau propre").GetComponent<DrinkActionResultComponent>().Result.Outcome);
+        Assert.Equal(DrinkOutcome.Success, FindByName(world, "Buveur eau contaminee").GetComponent<DrinkActionResultComponent>().Result.Outcome);
+        Assert.True(FindByName(world, "Buisson ressource baies").GetComponent<ConsumableResourceComponent>().CurrentQuantity < 30);
+        Assert.True(FindByName(world, "Source eau propre").GetComponent<WaterSourceComponent>().CurrentVolumeLiters < 50);
+        Assert.True(FindByName(world, "Buveur eau contaminee").GetComponent<ContaminationExposureComponent>().Exposures.Count > 0);
+    }
+
+    [Fact]
+    public void DietCompatibilityScenario_AppliesDifferentDigestibilityToSameResource()
+    {
+        var world = CreateScenarioWorld("diet_compatibility.json");
+
+        Tick(world, 1);
+
+        var profileA = FindByName(world, "Profil A fruit herbe");
+        var profileB = FindByName(world, "Profil B viande");
+
+        Assert.True(profileA.GetComponent<EnergyNeedComponent>().CurrentEnergy >
+                    profileB.GetComponent<EnergyNeedComponent>().CurrentEnergy);
+    }
+
     private static WorldState CreateScenarioWorld(
         string scenarioFileName,
         IAmbientTemperatureProvider? ambientTemperatureProvider = null)
@@ -239,6 +270,7 @@ public sealed class SandboxScenarioRegressionTests
             new BodyCapabilitiesModule(),
             new ImpactModule(),
             new TerrainModule(),
+            new NeedsModule(),
             new VitalsModule(),
             new TemperatureModule(ambientTemperatureProvider ?? new ComponentAmbientTemperatureProvider())
         };
