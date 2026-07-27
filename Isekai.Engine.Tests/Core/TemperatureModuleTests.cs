@@ -151,6 +151,52 @@ public sealed class TemperatureModuleTests
     }
 
     [Fact]
+    public void TemperatureExchangeSystem_UsesDifferentAmbientTemperaturesPerEntity()
+    {
+        var world = CreateWorldWithoutAmbient();
+        var coldEntity = CreateMaterialEntity(world, 20);
+        var hotEntity = CreateMaterialEntity(world, 20);
+        var provider = new EntityAmbientTemperatureProvider(new Dictionary<EntityId, double>
+        {
+            [coldEntity.Id] = 0,
+            [hotEntity.Id] = 40
+        });
+
+        world.RegisterSystem(new TemperatureExchangeSystem(provider));
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        Assert.True(coldEntity.GetComponent<TemperatureComponent>().Celsius < 20);
+        Assert.True(hotEntity.GetComponent<TemperatureComponent>().Celsius > 20);
+    }
+
+    [Fact]
+    public void ComponentAmbientTemperatureProvider_UsesFallbackWhenWorldHasNoAmbientComponent()
+    {
+        var world = CreateWorldWithoutAmbient();
+        var entity = CreateMaterialEntity(world, 10);
+
+        world.RegisterSystem(new TemperatureExchangeSystem(fallbackAmbientCelsius: 25));
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        var temperature = entity.GetComponent<TemperatureComponent>();
+
+        Assert.True(temperature.Celsius > 10);
+        Assert.True(temperature.Celsius <= 25);
+    }
+
+    [Fact]
+    public void TemperatureExchangeSystem_IgnoresNaNAmbientTemperature()
+    {
+        var world = CreateWorldWithoutAmbient();
+        var entity = CreateMaterialEntity(world, 10);
+
+        world.RegisterSystem(new TemperatureExchangeSystem(new FixedAmbientTemperatureProvider(double.NaN)));
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(10, entity.GetComponent<TemperatureComponent>().Celsius);
+    }
+
+    [Fact]
     public void ComponentAmbientTemperatureProvider_ReproducesExistingAmbientComponentBehavior()
     {
         var world = CreateWorldWithAmbient(26.5);
@@ -211,6 +257,16 @@ public sealed class TemperatureModuleTests
 
     private static WorldState CreateWorldWithAmbient(double ambientCelsius)
     {
+        var world = CreateWorldWithoutAmbient();
+
+        var ambient = world.CreateEntity();
+        ambient.AddComponent(new AmbientTemperatureComponent(ambientCelsius));
+
+        return world;
+    }
+
+    private static WorldState CreateWorldWithoutAmbient()
+    {
         var registry = new DefinitionRegistry();
         registry.Register(new MaterialDefinition(
             DefinitionId.From("material.test"),
@@ -219,16 +275,11 @@ public sealed class TemperatureModuleTests
             ThermalConductivity: 100));
         registry.Freeze();
 
-        var world = new WorldState(
+        return new WorldState(
             new SimulationTime(),
             new EventBus(),
             registry,
             NoOpTraceLogger.Instance);
-
-        var ambient = world.CreateEntity();
-        ambient.AddComponent(new AmbientTemperatureComponent(ambientCelsius));
-
-        return world;
     }
 
     private static Entity CreateMaterialEntity(WorldState world, double temperatureCelsius)
@@ -257,6 +308,21 @@ public sealed class TemperatureModuleTests
         public double GetAmbientTemperatureCelsius(IWorldState world, Entity entity)
         {
             return _ambientTemperatureCelsius;
+        }
+    }
+
+    private sealed class EntityAmbientTemperatureProvider : IAmbientTemperatureProvider
+    {
+        private readonly IReadOnlyDictionary<EntityId, double> _temperaturesByEntityId;
+
+        public EntityAmbientTemperatureProvider(IReadOnlyDictionary<EntityId, double> temperaturesByEntityId)
+        {
+            _temperaturesByEntityId = temperaturesByEntityId;
+        }
+
+        public double GetAmbientTemperatureCelsius(IWorldState world, Entity entity)
+        {
+            return _temperaturesByEntityId[entity.Id];
         }
     }
 }
