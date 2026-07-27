@@ -88,7 +88,24 @@ public static class SandboxScenarioRegistry
             "Compare deux profils alimentaires generiques sur les memes ressources.",
             "diet_compatibility.json",
             1,
-            ShowNeedsDiagnostics: true)
+            ShowNeedsDiagnostics: true),
+        new(
+            "movement-perception",
+            "Deplacement et perception",
+            "Une entite percoit une ressource et le moteur resout son deplacement avec couts.",
+            "movement_perception.json",
+            25,
+            ShowNeedsDiagnostics: true,
+            EnableMovementPerceptionDemo: true,
+            EnableMovementResolution: true),
+        new(
+            "injured-movement",
+            "Mobilite reduite",
+            "Deux entites recoivent la meme intention, mais la mobilite reduite limite la distance.",
+            "injured_movement.json",
+            1,
+            ShowNeedsDiagnostics: true,
+            EnableMovementResolution: true)
     ];
 
     /// <summary>

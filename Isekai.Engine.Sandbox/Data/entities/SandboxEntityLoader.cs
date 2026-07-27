@@ -10,7 +10,9 @@ using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
+using Isekai.Engine.Modules.Movement;
 using Isekai.Engine.Modules.Needs;
+using Isekai.Engine.Modules.Perception;
 using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
@@ -246,6 +248,48 @@ public sealed class SandboxEntityLoader
                     definition.WaterSource.Quality.ChemicalContamination,
                     definition.WaterSource.Quality.Salinity),
                 definition.WaterSource.RefillLitersPerSecond));
+        }
+
+        if (definition.MovementCapability is not null)
+        {
+            entity.AddComponent(new MovementCapabilityComponent(
+                definition.MovementCapability.MaximumSpeedMetersPerSecond,
+                definition.MovementCapability.MaximumTraversableSlope,
+                definition.MovementCapability.BaseEnergyCostPerMeter,
+                definition.MovementCapability.BaseHydrationCostPerMeter));
+        }
+
+        if (definition.MobilityMultiplier is not null)
+        {
+            entity.AddComponent(new MobilityModifierComponent(definition.MobilityMultiplier.Value));
+        }
+
+        if (definition.MoveIntent is not null)
+        {
+            var mode = Enum.TryParse<MovementMode>(definition.MoveIntent.Mode, ignoreCase: true, out var parsedMode)
+                ? parsedMode
+                : MovementMode.Walk;
+            entity.AddComponent(new MoveIntentComponent(new MoveIntent(
+                entity.Id,
+                new WorldVector(
+                    definition.MoveIntent.DirectionX,
+                    definition.MoveIntent.DirectionY,
+                    definition.MoveIntent.DirectionZ),
+                definition.MoveIntent.DesiredDistanceMeters,
+                mode)));
+        }
+
+        if (definition.PerceptionCapability is not null)
+        {
+            entity.AddComponent(new PerceptionCapabilityComponent(
+                definition.PerceptionCapability.MaximumRangeMeters,
+                definition.PerceptionCapability.FieldOfViewDegrees,
+                definition.PerceptionCapability.MaximumPerceivedEntities));
+        }
+
+        if (definition.PerceptionSignature is not null)
+        {
+            entity.AddComponent(new PerceptionSignatureComponent(definition.PerceptionSignature.Tags));
         }
 
         return entity;

@@ -11,4 +11,6 @@ public sealed record SandboxScenario(
     int DefaultTicks,
     bool UseLocalAmbientTemperatureProvider = false,
     bool ShowTerrainDiagnostics = false,
-    bool ShowNeedsDiagnostics = false);
+    bool ShowNeedsDiagnostics = false,
+    bool EnableMovementPerceptionDemo = false,
+    bool EnableMovementResolution = false);

@@ -42,7 +42,9 @@ Isekai.Engine/
     Healing/
     Injuries/
     Materials/
+    Movement/
     Needs/
+    Perception/
     Temperature/
     Terrain/
     Vitals/
@@ -64,11 +66,15 @@ Isekai.Engine.Sandbox/
   Systems/
   Terminal/
   World/
+
+Isekai.Engine.SandboxPlus/
+  Sandbox++ graphical viewer
 ```
 
 `Isekai.Engine` contient le Core du moteur.
 `Isekai.Engine.Tests` contient les tests unitaires xUnit.
 `Isekai.Engine.Sandbox` contient une application console de validation manuelle separee du moteur. Elle utilise `Spectre.Console` pour le rendu terminal colore.
+`Isekai.Engine.SandboxPlus` contient une interface graphique Windows legere pour visualiser les memes scenarios plus proprement.
 
 ## Lancer les tests avec Rider
 
@@ -87,9 +93,11 @@ Configurations disponibles :
 Resultat attendu :
 
 ```text
-191 tests passed
+206 tests passed
 0 failed
 ```
+
+La configuration `Tests - Sandbox Scenarios` execute actuellement 15 tests de regression sandbox.
 
 ## Lancer les tests en ligne de commande
 
@@ -114,11 +122,18 @@ Configuration disponible :
 
 - `Sandbox Console` : lance la sandbox avec `--ticks=30` et affiche le menu de scenarios.
 - `Sandbox Console Trace` : lance la sandbox avec `--ticks=10 --trace` et genere `debug.log`.
+- `Sandbox++` : lance l'interface graphique de visualisation des scenarios.
 
 Depuis PowerShell :
 
 ```powershell
 dotnet run --project .\Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj
+```
+
+Pour lancer l'interface graphique :
+
+```powershell
+dotnet run --project .\Isekai.Engine.SandboxPlus\Isekai.Engine.SandboxPlus.csproj
 ```
 
 Options :
@@ -146,6 +161,8 @@ thermal-zones       Zones thermiques locales
 terrain-basic       Terrain de base
 needs-consumption   Besoins et consommation
 diet-compatibility  Compatibilite alimentaire
+movement-perception Deplacement et perception
+injured-movement    Mobilite reduite
 ```
 
 La sandbox charge :
@@ -450,7 +467,9 @@ Modules actuels :
 - `ImpactModule`
 - `InjuryModule`
 - `MaterialModule`
+- `MovementModule`
 - `NeedsModule`
+- `PerceptionModule`
 - `TemperatureModule`
 - `TerrainModule`
 - `VitalsModule`
@@ -710,6 +729,106 @@ Types principaux :
 - `HealingTargetComponent` : cible actuellement soignee.
 - `NaturalRecoverySystem` : reduit les blessures selon les capacites naturelles de l'entite.
 - `TreatmentSystem` : applique un soin externe depuis une entite soigneuse vers une cible.
+
+## Module Movement
+
+Le module `Movement` resout les intentions de deplacement de maniere autoritaire.
+Un controleur externe peut demander un mouvement, mais il ne decide pas que le mouvement reussit et ne modifie pas directement `PositionComponent`.
+
+Types principaux :
+
+- `MovementCapabilityComponent` : vitesse maximale, pente maximale, cout energetique et cout hydrique par metre.
+- `MovementMode` : modes generiques `Walk` et `Run`.
+- `MoveIntent` : demande locale direction + distance + mode.
+- `MoveIntentComponent` : intention portee par une entite pour le prochain tick.
+- `MovementResolutionSystem` : valide et applique le mouvement.
+- `MovementResultComponent` : resultat explicite du dernier mouvement.
+- `IMobilityProvider` : point d'extension pour reduire la mobilite sans coder les especes dans Movement.
+- `ITerrainTraversalProvider` : point d'extension pour interpreter le sol et les obstacles.
+
+Formule simplifiee :
+
+```text
+maximumDistance = MaximumSpeedMetersPerSecond * ModeSpeedMultiplier * deltaTime
+candidateDistance = min(requestedDistance, maximumDistance)
+actualDistance = candidateDistance * terrainSpeedMultiplier * slopeMultiplier * mobilityMultiplier
+```
+
+Les couts sont appliques uniquement sur la distance reelle :
+
+```text
+energyCost = actualDistance * BaseEnergyCostPerMeter * modeCostMultiplier * terrainCostMultiplier
+hydrationCost = actualDistance * BaseHydrationCostPerMeter * modeCostMultiplier * terrainCostMultiplier
+```
+
+Si l'energie disponible est insuffisante, le moteur reduit la distance possible au lieu de facturer une distance non parcourue.
+Les reserves ne deviennent jamais negatives.
+
+La pente est lue depuis `TerrainGrid.GetSlopeBetween`.
+Le premier modele evalue la cellule de depart et la cellule de destination, sans pathfinding global et sans echantillonnage complet du trajet.
+Une cellule peut etre marquee infranchissable via `ITerrainTraversalProvider`.
+
+Flux recommande :
+
+```text
+Needs passive update
+      v
+Observation built
+      v
+Controller produces MoveIntent
+      v
+MovementResolutionSystem
+      v
+New Position + Costs + Result
+```
+
+## Module Perception
+
+Le module `Perception` construit des observations factuelles.
+Il ne choisit pas d'action, ne decide pas qu'une ressource est meilleure, et ne connait pas les especes.
+
+Types principaux :
+
+- `PerceptionCapabilityComponent` : portee, champ de vision prevu et limite de resultats.
+- `PerceptionSignatureComponent` : tags data-driven visibles par la perception.
+- `AgentObservationBuilder` : construit un snapshot d'observation a la demande.
+- `AgentObservation` : observation externe et etat interne simplifie.
+- `PerceivedEntityObservation` : entite percue, distance, direction, tags et quantite publique eventuelle.
+- `PerceivedTerrainObservation` : ressource spatiale percue dans une cellule.
+- `IPerceptibleTerrainResourceProvider` : pont vers les ressources portees par le terrain.
+
+Schema :
+
+```text
+World State
+     v
+Perception
+     v
+AgentObservation
+     v
+External Controller
+     v
+MoveIntent
+     v
+MovementResolutionSystem
+     v
+New Position + Costs + Result
+```
+
+L'observation interne expose des valeurs normalisees :
+
+- energie ;
+- hydratation ;
+- mobilite ;
+- confort thermique ;
+- etat vital.
+
+Si un composant est absent, l'observation utilise une valeur neutre documentee par le type.
+La perception des entites est ordonnee de maniere deterministe par distance croissante puis `EntityId`.
+Pour cette premiere version, il n'y a pas d'occlusion complexe, pas de raycasting et pas de champ de vision directionnel impose.
+
+Les scenarios sandbox `movement-perception` et `injured-movement` montrent une boucle minimale :
+perception, intention, resolution Movement, couts de besoins et comparaison de mobilite.
 
 ## Module Needs
 

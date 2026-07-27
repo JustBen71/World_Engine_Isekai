@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Isekai.Engine\Isekai.Engine.csproj" />
+    <ProjectReference Include="..\Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Isekai.Engine.Sandbox\Data\**\*.json" Link="Data\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

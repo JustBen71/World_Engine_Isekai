@@ -6,6 +6,9 @@ using Isekai.Engine.Modules.Handling;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
+using Isekai.Engine.Modules.Movement;
+using Isekai.Engine.Modules.Needs;
+using Isekai.Engine.Modules.Perception;
 using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Vitals;
 using Isekai.Engine.Sandbox.Components;
@@ -81,10 +84,10 @@ public sealed class SpectreWorldRenderer
     {
         var layout = new Layout("Root");
 
-        if (AnsiConsole.Profile.Width >= 140)
+        if (AnsiConsole.Profile.Width >= 120)
         {
             layout.SplitColumns(
-                new Layout("Map").Ratio(1),
+                new Layout("Map").Size(Math.Min(76, Math.Max(42, (_map.Width * 2) + 8))),
                 new Layout("Info").Ratio(1));
         }
         else
@@ -118,26 +121,38 @@ public sealed class SpectreWorldRenderer
             rows.Add(new Markup(string.Concat(line)));
         }
 
+        rows.Add(new Markup(" "));
+        rows.Add(new Markup("[on green]  [/] prairie  [on darkgreen]  [/] foret  [on blue]  [/] eau  [on grey]  [/] relief"));
+
         return new Panel(new Rows(rows.ToArray()))
-            .Header($"[bold]World Engine Sandbox[/] [grey]frame {frame}[/]")
+            .Header($"[bold cyan]World Engine[/] [grey]tick {world.Time.TickCount} / frame {frame}[/]")
             .Border(BoxBorder.Rounded)
-            .BorderColor(Color.Green);
+            .BorderColor(Color.Cyan1)
+            .Padding(1, 0);
     }
 
     private Panel BuildCompactInfoPanel(WorldState world, int frame)
     {
         var stats = _map.GetTemperatureStats(world.Time.TickCount);
-        var table = new Table()
+        var metrics = new Table()
             .NoBorder()
-            .AddColumn("[grey]Item[/]")
-            .AddColumn("[grey]State[/]");
+            .AddColumn("[grey]Metric[/]")
+            .AddColumn("[grey]Value[/]");
 
-        table.AddRow("Frame/Tick", $"{frame.ToString(CultureInfo.InvariantCulture)} / {world.Time.TickCount.ToString(CultureInfo.InvariantCulture)}");
-        table.AddRow("Map temp", $"{FormatTemperature(stats.Average)} avg | {FormatTemperature(stats.Minimum)} min | {FormatTemperature(stats.Maximum)} max");
-        table.AddRow("Ambient", FormatTemperature(ReadEngineAmbient(world)));
-        table.AddRow("Terrain", "[green]prairie[/] [darkgreen]forest[/] [blue]water[/] [grey]mountain[/]");
-        table.AddRow("Keys", "B=body, C=composite, H=held/action, K=impact, Blood=blood, I=injury");
-        table.AddRow("[bold]Entities[/]", string.Empty);
+        metrics.AddRow("Tick", world.Time.TickCount.ToString(CultureInfo.InvariantCulture));
+        metrics.AddRow("Frame", frame.ToString(CultureInfo.InvariantCulture));
+        metrics.AddRow("Map temp", $"{FormatTemperature(stats.Average)} avg  {FormatTemperature(stats.Minimum)} min  {FormatTemperature(stats.Maximum)} max");
+        metrics.AddRow("Ambient", FormatTemperature(ReadEngineAmbient(world)));
+        metrics.AddRow("Entities", world.Entities.Count.ToString(CultureInfo.InvariantCulture));
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Grey)
+            .AddColumn("[grey]Entite[/]")
+            .AddColumn("[grey]Pos[/]")
+            .AddColumn("[grey]Besoins[/]")
+            .AddColumn("[grey]Physique[/]")
+            .AddColumn("[grey]Action[/]");
 
         foreach (var entity in ReadDisplayedEntities(world)
                      .OrderByDescending(entity => entity.HasComponent<CompositeComponent>())
@@ -149,7 +164,7 @@ public sealed class SpectreWorldRenderer
                 ? nameComponent.Name
                 : entity.Id.ToString();
             var glyph = entity.TryGetComponent<DisplayGlyphComponent>(out var display) && display is not null
-                ? Markup.Escape(display.Glyph)
+                ? FormatEntityBadge(display.Glyph)
                 : "?";
             var position = entity.TryGetComponent<Position2DComponent>(out var positionComponent) && positionComponent is not null
                 ? $"({positionComponent.X},{positionComponent.Y})"
@@ -186,16 +201,23 @@ public sealed class SpectreWorldRenderer
                 ? FormatImpact(impactResult)
                 : "[grey]-[/]";
             var handling = FormatHandling(entity);
+            var needs = FormatNeeds(entity);
+            var action = FormatAction(entity);
+            var physical = $"{mass} | {temperature} | B{body} | C{composite}";
 
             table.AddRow(
                 $"{glyph} {Markup.Escape(name)}",
-                $"{position} {mass} {temperature} {comfort} {vital} B{body} C{composite} H{handling} K{impact} Blood{blood} I{injuries}");
+                Markup.Escape(position),
+                needs,
+                $"{physical} | {comfort} {vital} | Blood{blood} | I{injuries}",
+                $"H{handling} | K{impact} | {action}");
         }
 
-        return new Panel(table)
-            .Header("[bold]World state[/]")
+        return new Panel(new Rows(metrics, new Text(string.Empty), table))
+            .Header("[bold yellow]Simulation[/]")
             .Border(BoxBorder.Rounded)
-            .BorderColor(Color.Yellow);
+            .BorderColor(Color.Yellow)
+            .Padding(1, 0);
     }
 
     private Panel BuildInfoPanel(WorldState world, int frame)
@@ -270,7 +292,7 @@ public sealed class SpectreWorldRenderer
                 continue;
             }
 
-            symbols[(position.X, position.Y)] = $"[bold white]{Markup.Escape(glyph.Glyph)}[/]";
+            symbols[(position.X, position.Y)] = $"[bold black on white]{FormatCellText(glyph.Glyph)}[/]";
         }
 
         return symbols;
@@ -290,12 +312,26 @@ public sealed class SpectreWorldRenderer
     {
         return terrain switch
         {
-            TerrainKind.Prairie => "[green]🌾[/]",
-            TerrainKind.Forest => "[darkgreen]🌳[/]",
-            TerrainKind.Water => "[blue]🌊[/]",
-            TerrainKind.Mountain => "[grey]⛰️[/]",
-            _ => "[grey].[/]"
+            TerrainKind.Prairie => "[on green]  [/]",
+            TerrainKind.Forest => "[on darkgreen]  [/]",
+            TerrainKind.Water => "[on blue]  [/]",
+            TerrainKind.Mountain => "[on grey]  [/]",
+            _ => "[on black]  [/]"
         };
+    }
+
+    private static string FormatCellText(string glyph)
+    {
+        var value = string.IsNullOrWhiteSpace(glyph)
+            ? "?"
+            : glyph.Trim();
+
+        return Markup.Escape(value.Length == 1 ? $"{value} " : value[..Math.Min(2, value.Length)]);
+    }
+
+    private static string FormatEntityBadge(string glyph)
+    {
+        return $"[bold black on white] {FormatCellText(glyph).Trim()} [/]";
     }
 
     private static string FormatTemperature(double value)
@@ -468,6 +504,92 @@ public sealed class SpectreWorldRenderer
         return heldCount > 0 || !string.IsNullOrWhiteSpace(action)
             ? $"{heldCount.ToString(CultureInfo.InvariantCulture)}{action}"
             : "[grey]-[/]";
+    }
+
+    private static string FormatNeeds(Core.Entity entity)
+    {
+        var parts = new List<string>();
+
+        if (entity.TryGetComponent<EnergyNeedComponent>(out var energy) && energy is not null)
+        {
+            parts.Add($"E {FormatRatio(energy.CurrentEnergy, energy.MaximumEnergy)}");
+        }
+
+        if (entity.TryGetComponent<HydrationNeedComponent>(out var hydration) && hydration is not null)
+        {
+            parts.Add($"H {FormatRatio(hydration.CurrentHydration, hydration.MaximumHydration)}");
+        }
+
+        if (entity.TryGetComponent<ConsumableResourceComponent>(out var consumable) && consumable is not null)
+        {
+            parts.Add($"Food {FormatQuantity(consumable.CurrentQuantity, consumable.MaximumQuantity)}");
+        }
+
+        if (entity.TryGetComponent<WaterSourceComponent>(out var water) && water is not null)
+        {
+            parts.Add($"Water {FormatQuantity(water.CurrentVolumeLiters, water.MaximumVolumeLiters)}L");
+        }
+
+        return parts.Count == 0 ? "[grey]-[/]" : string.Join("  ", parts);
+    }
+
+    private static string FormatAction(Core.Entity entity)
+    {
+        var parts = new List<string>();
+
+        if (entity.TryGetComponent<MovementResultComponent>(out var movement) && movement is not null)
+        {
+            var moved = movement.Result.ActualDistanceMeters.ToString("0.##", CultureInfo.InvariantCulture);
+            parts.Add($"Move {FormatMovementOutcome(movement.Result.Outcome)} {moved}m");
+        }
+
+        if (entity.TryGetComponent<PerceptionCapabilityComponent>(out var perception) && perception is not null)
+        {
+            parts.Add($"View {perception.MaximumRangeMeters.ToString("0.#", CultureInfo.InvariantCulture)}m");
+        }
+
+        return parts.Count == 0 ? "[grey]-[/]" : string.Join("  ", parts);
+    }
+
+    private static string FormatRatio(double current, double maximum)
+    {
+        if (!double.IsFinite(current) || !double.IsFinite(maximum) || maximum <= 0)
+        {
+            return "[grey]n/a[/]";
+        }
+
+        var percent = Math.Clamp(current / maximum, 0, 1) * 100;
+        var text = $"{percent.ToString("0", CultureInfo.InvariantCulture)}%";
+
+        return percent switch
+        {
+            < 20 => $"[red]{text}[/]",
+            < 50 => $"[yellow]{text}[/]",
+            _ => $"[green]{text}[/]"
+        };
+    }
+
+    private static string FormatQuantity(double current, double maximum)
+    {
+        if (!double.IsFinite(current) || !double.IsFinite(maximum) || maximum <= 0)
+        {
+            return "[grey]n/a[/]";
+        }
+
+        return $"{current.ToString("0.#", CultureInfo.InvariantCulture)}/{maximum.ToString("0.#", CultureInfo.InvariantCulture)}";
+    }
+
+    private static string FormatMovementOutcome(MovementOutcome outcome)
+    {
+        return outcome switch
+        {
+            MovementOutcome.Success => "[green]ok[/]",
+            MovementOutcome.PartialSuccess => "[yellow]partial[/]",
+            MovementOutcome.InvalidIntent or MovementOutcome.MissingEntity or MovementOutcome.MissingPosition or MovementOutcome.MissingCapability => "[red]invalid[/]",
+            MovementOutcome.OutOfBounds or MovementOutcome.ImpassableTerrain or MovementOutcome.SlopeTooSteep => "[red]blocked[/]",
+            MovementOutcome.InsufficientEnergy or MovementOutcome.NoMobility => "[red]limited[/]",
+            _ => $"[grey]{Markup.Escape(outcome.ToString())}[/]"
+        };
     }
 
     private static string FormatInjuries(WorldState world, InjuryComponent injuries)

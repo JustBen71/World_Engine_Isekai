@@ -11,7 +11,9 @@ using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
+using Isekai.Engine.Modules.Movement;
 using Isekai.Engine.Modules.Needs;
+using Isekai.Engine.Modules.Perception;
 using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
@@ -224,6 +226,39 @@ public sealed class SandboxScenarioRegressionTests
                     profileB.GetComponent<EnergyNeedComponent>().CurrentEnergy);
     }
 
+    [Fact]
+    public void MovementPerceptionScenario_MovesAgentTowardPerceivedResource()
+    {
+        var world = CreateScenarioWorld("movement_perception.json");
+        var agent = FindByName(world, "Agent mobile");
+        var start = agent.GetComponent<PositionComponent>().Position;
+
+        Tick(world, 3);
+
+        var end = agent.GetComponent<PositionComponent>().Position;
+        var result = agent.GetComponent<MovementResultComponent>().Result;
+
+        Assert.True(end.X > start.X);
+        Assert.True(result.ActualDistanceMeters > 0);
+        Assert.True(agent.GetComponent<EnergyNeedComponent>().CurrentEnergy < 80);
+        Assert.True(agent.GetComponent<HydrationNeedComponent>().CurrentHydration < 75);
+    }
+
+    [Fact]
+    public void InjuredMovementScenario_ReducesInjuredDistance()
+    {
+        var world = CreateScenarioWorld("injured_movement.json");
+
+        Tick(world, 1);
+
+        var healthy = FindByName(world, "Mobile sain").GetComponent<MovementResultComponent>().Result;
+        var injured = FindByName(world, "Mobile blesse").GetComponent<MovementResultComponent>().Result;
+
+        Assert.True(healthy.ActualDistanceMeters > injured.ActualDistanceMeters);
+        Assert.Equal(MovementOutcome.PartialSuccess, injured.Outcome);
+        Assert.True(healthy.ActualDistanceMeters > 0);
+    }
+
     private static WorldState CreateScenarioWorld(
         string scenarioFileName,
         IAmbientTemperatureProvider? ambientTemperatureProvider = null)
@@ -231,6 +266,7 @@ public sealed class SandboxScenarioRegressionTests
         var modules = CreateModules(ambientTemperatureProvider);
         var definitions = LoadDefinitions(modules);
         var map = new SandboxMap(30, 7);
+        var terrainService = CreateTerrainService(definitions);
         var world = new WorldState(
             new SimulationTime(),
             new EventBus(),
@@ -245,6 +281,18 @@ public sealed class SandboxScenarioRegressionTests
         foreach (var module in modules)
         {
             module.RegisterSystems(world);
+        }
+
+        if (string.Equals(scenarioFileName, "movement_perception.json", StringComparison.OrdinalIgnoreCase))
+        {
+            world.RegisterSystem(new SandboxPerceptionMoveControllerSystem(new AgentObservationBuilder()));
+            world.RegisterSystem(new MovementResolutionSystem(terrainService));
+            world.RegisterSystem(new SandboxPosition2DSyncSystem(map.Width, map.Height));
+        }
+        else if (string.Equals(scenarioFileName, "injured_movement.json", StringComparison.OrdinalIgnoreCase))
+        {
+            world.RegisterSystem(new MovementResolutionSystem(terrainService));
+            world.RegisterSystem(new SandboxPosition2DSyncSystem(map.Width, map.Height));
         }
 
         world.RegisterSystem(new Movement2DSystem(map.Width, map.Height));
@@ -271,9 +319,21 @@ public sealed class SandboxScenarioRegressionTests
             new ImpactModule(),
             new TerrainModule(),
             new NeedsModule(),
+            new PerceptionModule(),
             new VitalsModule(),
             new TemperatureModule(ambientTemperatureProvider ?? new ComponentAmbientTemperatureProvider())
         };
+    }
+
+    private static ITerrainService CreateTerrainService(DefinitionRegistry definitions)
+    {
+        var definition = definitions.Get<TerrainGridDefinition>(DefinitionId.From("terrain.demo.basic"));
+        var grid = new SimpleTerrainGenerator().Generate(new TerrainGenerationRequest(definition));
+
+        grid.SetSoil(new TerrainCellCoordinate(7, 1), DefinitionId.From("soil.gravel"));
+        grid.SetSoil(new TerrainCellCoordinate(8, 8), DefinitionId.From("soil.clay"));
+
+        return new TerrainService(grid);
     }
 
     private static DefinitionRegistry LoadDefinitions(IReadOnlyCollection<IEngineModule> modules)

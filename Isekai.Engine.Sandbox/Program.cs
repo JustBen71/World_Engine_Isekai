@@ -11,7 +11,9 @@ using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
+using Isekai.Engine.Modules.Movement;
 using Isekai.Engine.Modules.Needs;
+using Isekai.Engine.Modules.Perception;
 using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
@@ -41,7 +43,7 @@ try
     var modules = CreateModules(scenario, map);
     var definitions = LoadDefinitions(dataDirectory, modules, logger);
     var terrainService = CreateTerrainService(definitions);
-    var world = CreateWorld(definitions, logger, map, modules, entityFile);
+    var world = CreateWorld(definitions, logger, map, modules, entityFile, scenario, terrainService);
     var renderer = new SpectreWorldRenderer(map, frameDelayMilliseconds: 250);
 
     if (scenario.ShowTerrainDiagnostics)
@@ -54,11 +56,21 @@ try
         RenderNeedsDiagnostics("Before", world);
     }
 
+    if (scenario.EnableMovementResolution)
+    {
+        RenderMovementPerceptionDiagnostics("Before", world);
+    }
+
     renderer.Run(world, tickCount);
 
     if (scenario.ShowNeedsDiagnostics)
     {
         RenderNeedsDiagnostics("After", world);
+    }
+
+    if (scenario.EnableMovementResolution)
+    {
+        RenderMovementPerceptionDiagnostics("After", world);
     }
 }
 finally
@@ -131,6 +143,7 @@ static IReadOnlyCollection<IEngineModule> CreateModules(SandboxScenario scenario
         new ImpactModule(),
         new TerrainModule(),
         new NeedsModule(),
+        new PerceptionModule(),
         new VitalsModule(),
         new TemperatureModule(ambientProvider)
     };
@@ -173,7 +186,9 @@ static WorldState CreateWorld(
     ITraceLogger logger,
     SandboxMap map,
     IReadOnlyCollection<IEngineModule> modules,
-    string entityFile)
+    string entityFile,
+    SandboxScenario scenario,
+    ITerrainService terrainService)
 {
     var world = new WorldState(
         new SimulationTime(logger),
@@ -192,11 +207,61 @@ static WorldState CreateWorld(
         module.RegisterSystems(world);
     }
 
+    if (scenario.EnableMovementPerceptionDemo)
+    {
+        var observationBuilder = new AgentObservationBuilder();
+        world.RegisterSystem(new SandboxPerceptionMoveControllerSystem(observationBuilder));
+    }
+
+    if (scenario.EnableMovementResolution)
+    {
+        world.RegisterSystem(new MovementResolutionSystem(terrainService));
+        world.RegisterSystem(new SandboxPosition2DSyncSystem(map.Width, map.Height));
+    }
+
     world.RegisterSystem(new Movement2DSystem(map.Width, map.Height));
 
     new SandboxEntityLoader().LoadFileInto(entityFile, world);
 
     return world;
+}
+
+static void RenderMovementPerceptionDiagnostics(string label, WorldState world)
+{
+    AnsiConsole.WriteLine();
+    AnsiConsole.MarkupLine($"[bold yellow]Movement/Perception diagnostics - {Markup.Escape(label)}[/]");
+    var builder = new AgentObservationBuilder();
+
+    foreach (var entity in world.Entities
+                 .Where(entity =>
+                     entity.HasComponent<MovementCapabilityComponent>() ||
+                     entity.HasComponent<MovementResultComponent>() ||
+                     entity.HasComponent<PerceptionCapabilityComponent>()))
+    {
+        var name = entity.TryGetComponent<NameComponent>(out var nameComponent) && nameComponent is not null
+            ? nameComponent.Name
+            : entity.Id.ToString();
+        var position = entity.TryGetComponent<PositionComponent>(out var positionComponent) && positionComponent is not null
+            ? positionComponent.Position
+            : new WorldPosition(0, 0, 0);
+        var target = "none";
+        if (entity.HasComponent<PerceptionCapabilityComponent>() && entity.HasComponent<PositionComponent>())
+        {
+            var observation = builder.BuildObservation(world, entity.Id);
+            var first = observation.PerceivedEntities.FirstOrDefault();
+            target = first is null
+                ? "none"
+                : $"{string.Join(",", first.Tags)} at {first.DistanceMeters:0.##}m";
+        }
+
+        var movement = entity.TryGetComponent<MovementResultComponent>(out var result) && result is not null
+            ? $"{result.Result.Outcome} moved={result.Result.ActualDistanceMeters:0.##}m"
+            : "no result";
+
+        AnsiConsole.MarkupLine($"{Markup.Escape(name)} pos=({position.X:0.##},{position.Y:0.##},{position.Z:0.##}) sees={Markup.Escape(target)} move={Markup.Escape(movement)}");
+    }
+
+    AnsiConsole.WriteLine();
 }
 
 static void RenderTerrainDiagnostics(WorldState world, ITerrainService terrainService)

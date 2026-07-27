@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Isekai.Engine.Tests", "Isek
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Isekai.Engine.Sandbox", "Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj", "{5B77E7FA-4A45-4C48-98A8-1B9291575560}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Isekai.Engine.SandboxPlus", "Isekai.Engine.SandboxPlus\Isekai.Engine.SandboxPlus.csproj", "{46494152-9588-40E0-9F22-8A244485CCD4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{5B77E7FA-4A45-4C48-98A8-1B9291575560}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B77E7FA-4A45-4C48-98A8-1B9291575560}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B77E7FA-4A45-4C48-98A8-1B9291575560}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46494152-9588-40E0-9F22-8A244485CCD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46494152-9588-40E0-9F22-8A244485CCD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46494152-9588-40E0-9F22-8A244485CCD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46494152-9588-40E0-9F22-8A244485CCD4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,108 @@
+{
+  "entities": [
+    {
+      "name": "Agent mobile",
+      "glyph": "A",
+      "material": "material.flesh",
+      "volume": 0.07,
+      "position": {
+        "x": 2,
+        "y": 2
+      },
+      "temperature": 36.8,
+      "needs": {
+        "currentEnergy": 80,
+        "maximumEnergy": 100,
+        "energyConsumptionPerSecond": 0.02,
+        "currentHydration": 75,
+        "maximumHydration": 100,
+        "hydrationConsumptionPerSecond": 0.02
+      },
+      "movementCapability": {
+        "maximumSpeedMetersPerSecond": 1.5,
+        "maximumTraversableSlope": 10,
+        "baseEnergyCostPerMeter": 0.45,
+        "baseHydrationCostPerMeter": 0.2
+      },
+      "perceptionCapability": {
+        "maximumRangeMeters": 12,
+        "fieldOfViewDegrees": 360,
+        "maximumPerceivedEntities": 8
+      },
+      "perceptionSignature": {
+        "tags": [
+          "living",
+          "agent"
+        ]
+      }
+    },
+    {
+      "name": "Buisson visible",
+      "glyph": "B",
+      "material": "material.wood",
+      "volume": 0.03,
+      "position": {
+        "x": 5,
+        "y": 4
+      },
+      "temperature": 18,
+      "consumable": {
+        "definition": "consumable.berries.basic",
+        "currentQuantity": 30,
+        "maximumQuantity": 30,
+        "regenerationPerSecond": 0,
+        "removeEntityWhenEmpty": false
+      },
+      "perceptionSignature": {
+        "tags": [
+          "resource",
+          "food",
+          "fruit"
+        ]
+      }
+    },
+    {
+      "name": "Point eau visible",
+      "glyph": "W",
+      "material": "material.water",
+      "volume": 0.2,
+      "position": {
+        "x": 8,
+        "y": 2
+      },
+      "temperature": 12,
+      "waterSource": {
+        "currentVolumeLiters": 80,
+        "maximumVolumeLiters": 80,
+        "refillLitersPerSecond": 0,
+        "quality": {
+          "bacterialContamination": 0,
+          "chemicalContamination": 0,
+          "salinity": 0
+        }
+      },
+      "perceptionSignature": {
+        "tags": [
+          "resource",
+          "water"
+        ]
+      }
+    },
+    {
+      "name": "Obstacle observe",
+      "glyph": "X",
+      "material": "material.stone",
+      "volume": 0.5,
+      "position": {
+        "x": 4,
+        "y": 2
+      },
+      "temperature": 18,
+      "perceptionSignature": {
+        "tags": [
+          "obstacle"
+        ]
+      }
+    }
+  ]
+}

@@ -34,4 +34,9 @@ public sealed record SandboxEntityDefinition(
     SandboxConsumableResourceData? Consumable,
     SandboxWaterSourceData? WaterSource,
     SandboxConsumeIntentData? ConsumeIntent,
-    SandboxDrinkIntentData? DrinkIntent);
+    SandboxDrinkIntentData? DrinkIntent,
+    SandboxMovementCapabilityData? MovementCapability,
+    double? MobilityMultiplier,
+    SandboxMoveIntentData? MoveIntent,
+    SandboxPerceptionCapabilityData? PerceptionCapability,
+    SandboxPerceptionSignatureData? PerceptionSignature);
