@@ -43,6 +43,7 @@ Isekai.Engine/
     Injuries/
     Materials/
     Temperature/
+    Terrain/
     Vitals/
   Interfaces/
   Exceptions/
@@ -85,7 +86,7 @@ Configurations disponibles :
 Resultat attendu :
 
 ```text
-137 tests passed
+165 tests passed
 0 failed
 ```
 
@@ -140,6 +141,8 @@ natural-recovery    Recuperation naturelle
 temperature-comfort Confort thermique
 composite-wear      Usure composite
 thermal-materials   Materiaux et temperature
+thermal-zones       Zones thermiques locales
+terrain-basic       Terrain de base
 ```
 
 La sandbox charge :
@@ -162,6 +165,9 @@ Le rendu affiche aussi une carte coloree avec emojis de terrain, ainsi qu'un pan
 
 Les memes fichiers de scenario sont executes par `SandboxScenarioRegressionTests`.
 Ces tests servent de garde-fous : si une formule du moteur change brutalement, un scenario de regression doit le signaler.
+
+Le scenario `thermal-zones` montre une ambiance locale simulee par la sandbox :
+une zone froide, une zone temperee et une zone chaude. Il ne depend pas d'un module `Terrain` complet.
 
 Legende terrain :
 
@@ -440,6 +446,7 @@ Modules actuels :
 - `InjuryModule`
 - `MaterialModule`
 - `TemperatureModule`
+- `TerrainModule`
 - `VitalsModule`
 
 ## Module Composition
@@ -698,18 +705,120 @@ Types principaux :
 - `NaturalRecoverySystem` : reduit les blessures selon les capacites naturelles de l'entite.
 - `TreatmentSystem` : applique un soin externe depuis une entite soigneuse vers une cible.
 
-## Module Temperature
+## Module Terrain
 
-Le module `Temperature` modelise la temperature physique et le ressenti thermique sans gameplay specifique.
+Le module `Terrain` modelise la structure spatiale persistante du monde.
+Une cellule de terrain n'est pas une entite ECS : elle ne possede pas de dictionnaire de composants, pas d'identifiant runtime d'entite et pas de cycle de vie d'entite.
+
+Responsabilites du module :
+
+- espace et grille ;
+- coordonnees de cellules ;
+- conversion depuis une position continue ;
+- altitude en metres ;
+- type physique de sol ;
+- voisins deterministes ;
+- regions spatiales et regions actives de simulation.
+
+Le terrain ne calcule pas les biomes, la meteo, la temperature ressentie, la vegetation, l'IA ou le gameplay.
+Ces phenomenes pourront utiliser le terrain sans lui appartenir.
 
 Types principaux :
 
-- `AmbientTemperatureComponent` : temperature ambiante disponible pour les systemes.
-- `TemperatureComponent` : temperature physique actuelle d'une entite.
-- `ThermalSensitivityComponent` : marque une entite comme sensible a la temperature.
+- `WorldPosition` : position continue en metres.
+- `PositionComponent` : position generique d'une entite.
+- `TerrainCellCoordinate` : coordonnee discrete d'une cellule.
+- `TerrainCell` : vue immutable d'une cellule avec altitude et sol.
+- `TerrainGrid` : grille compacte stockee par couches.
+- `SoilDefinition` : definition data-driven d'un type de sol.
+- `TerrainGridDefinition` : dimensions et profil de generation d'une grille.
+- `TerrainService` : acces terrain injecte explicitement aux consommateurs.
+- `ActiveSimulationRegionRegistry` : regions importantes en memoire.
+- `SimpleTerrainGenerator` : generation deterministe plate, pente ou colline centrale.
+
+Representation memoire :
+
+```text
+TerrainGrid
+  elevationLayer: double[]
+  soilLayer: DefinitionId[]
+  index = y * WidthInCells + x
+```
+
+`GetCell` retourne une copie immutable de la cellule.
+Les modifications passent par `SetElevation` et `SetSoil`, ce qui evite de croire qu'une copie modifie directement la grille.
+
+Les voisins sont retournes dans un ordre stable :
+
+```text
+4 voisins: Nord, Est, Sud, Ouest
+8 voisins: Nord, Nord-Est, Est, Sud-Est, Sud, Sud-Ouest, Ouest, Nord-Ouest
+```
+
+La pente est un ratio :
+
+```text
+(elevationTo - elevationFrom) / horizontalDistanceMeters
+```
+
+Integration avec les entites :
+
+```csharp
+entity.AddComponent(new PositionComponent(new WorldPosition(19, 24, 0)));
+var coordinate = terrainService.GetCellAt(entity.GetComponent<PositionComponent>().Position);
+```
+
+Integration avec `Temperature` :
+
+```text
+WorldPosition
+      v
+TerrainGrid
+      v
+TerrainCellCoordinate
+      v
+AmbientTemperatureProvider
+      v
+TemperatureExchangeSystem
+```
+
+Le choix actuel est de ne pas stocker de temperature ambiante dans `TerrainCell`.
+`Terrain` fournit seulement la position et la cellule. Un provider de temperature, ou plus tard un module `Climate`, pourra utiliser cette cellule pour retourner une ambiance locale.
+
+Le scenario sandbox `terrain-basic` affiche une grille 10x10 generee en pente, quelques cellules, les voisins d'une cellule et la cellule correspondant a chaque entite positionnee.
+
+## Module Temperature
+
+Le module `Temperature` est le module universel responsable de la chaleur et de la temperature.
+Il modelise la temperature physique, la temperature ambiante lue depuis une source abstraite et le ressenti thermique sans gameplay specifique.
+
+Il ne depend pas du module `Body` : un corps vivant, un objet, une matiere, un composite ou une future couche environnementale peuvent avoir une temperature.
+Le module `Terrain` fournit seulement la structure spatiale du monde. Le calcul thermique reste dans `Temperature`.
+
+Types principaux :
+
+- `AmbientTemperatureComponent` : temperature ambiante globale simple, conservee pour les tests et scenarios existants.
+- `IAmbientTemperatureProvider` : source abstraite de temperature ambiante autour d'une entite.
+- `ComponentAmbientTemperatureProvider` : fournisseur par defaut qui lit `AmbientTemperatureComponent`.
+- `TemperatureComponent` : temperature physique actuelle d'une entite, en degres Celsius.
+- `ThermalSensitivityComponent` : plage de temperature confortable d'une entite sensible.
 - `ThermalComfortComponent` : resultat calcule du confort thermique.
-- `TemperatureExchangeSystem` : fait tendre la temperature physique vers l'ambiante.
+- `TemperatureExchangeSystem` : fait tendre progressivement la temperature physique vers l'ambiance fournie.
 - `ThermalComfortSystem` : calcule le confort seulement pour les entites sensibles.
+
+Flux de responsabilites :
+
+```text
+AmbientTemperatureProvider
+          ↓
+TemperatureExchangeSystem
+          ↓
+TemperatureComponent
+          ↓
+ThermalComfortSystem
+          ↓
+ThermalComfortComponent
+```
 
 Exemple :
 
@@ -723,6 +832,9 @@ Elle change alors de temperature, mais ne ressent rien.
 
 Un humain ou un cerf peut avoir les deux composants.
 Le moteur calcule alors un `ThermalComfortComponent`.
+
+La temperature ambiante peut venir du composant global existant ou, plus tard, d'un provider spatial qui lit la position d'une entite puis demande la temperature de la cellule correspondante.
+Le module ne connait pas les biomes, le climat, les saisons, le jour/nuit, l'altitude ou l'humidite.
 
 ## Regles de mutation pendant un Tick
 
