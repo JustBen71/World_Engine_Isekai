@@ -12,6 +12,7 @@ using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
 using Isekai.Engine.Modules.Temperature;
+using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
 using Isekai.Engine.Sandbox.Components;
 using Isekai.Engine.Sandbox.Data.Entities;
@@ -176,6 +177,22 @@ public sealed class SandboxScenarioRegressionTests
         Assert.True(hot > 20);
     }
 
+    [Fact]
+    public void TerrainBasicScenario_LoadsPositionedEntitiesWithTerrainPositions()
+    {
+        var world = CreateScenarioWorld("terrain_basic.json");
+
+        Tick(world, 1);
+
+        var explorer = FindByName(world, "Explorateur terrain");
+        var position = explorer.GetComponent<PositionComponent>();
+        var gridDefinition = world.Definitions.Get<TerrainGridDefinition>(DefinitionId.From("terrain.demo.basic"));
+        var grid = new SimpleTerrainGenerator().Generate(new TerrainGenerationRequest(gridDefinition));
+        var terrainService = new TerrainService(grid);
+
+        Assert.Equal(new TerrainCellCoordinate(1, 1), terrainService.GetCellAt(position.Position));
+    }
+
     private static WorldState CreateScenarioWorld(
         string scenarioFileName,
         IAmbientTemperatureProvider? ambientTemperatureProvider = null)
@@ -221,6 +238,7 @@ public sealed class SandboxScenarioRegressionTests
             new HandlingModule(),
             new BodyCapabilitiesModule(),
             new ImpactModule(),
+            new TerrainModule(),
             new VitalsModule(),
             new TemperatureModule(ambientTemperatureProvider ?? new ComponentAmbientTemperatureProvider())
         };

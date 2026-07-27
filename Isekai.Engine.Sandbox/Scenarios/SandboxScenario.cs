@@ -9,4 +9,5 @@ public sealed record SandboxScenario(
     string Description,
     string EntityFileName,
     int DefaultTicks,
-    bool UseLocalAmbientTemperatureProvider = false);
+    bool UseLocalAmbientTemperatureProvider = false,
+    bool ShowTerrainDiagnostics = false);

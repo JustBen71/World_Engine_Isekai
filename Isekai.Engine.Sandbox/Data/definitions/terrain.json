@@ -1,0 +1,44 @@
+{
+  "definitions": [
+    {
+      "type": "terrain.soil",
+      "id": "soil.loam",
+      "displayName": "Loam",
+      "movementCostMultiplier": 1.0,
+      "waterRetention": 0.75,
+      "drainage": 0.55,
+      "fertility": 0.8,
+      "hardness": 0.35
+    },
+    {
+      "type": "terrain.soil",
+      "id": "soil.clay",
+      "displayName": "Clay",
+      "movementCostMultiplier": 1.25,
+      "waterRetention": 0.9,
+      "drainage": 0.25,
+      "fertility": 0.65,
+      "hardness": 0.55
+    },
+    {
+      "type": "terrain.soil",
+      "id": "soil.gravel",
+      "displayName": "Gravel",
+      "movementCostMultiplier": 1.1,
+      "waterRetention": 0.25,
+      "drainage": 0.85,
+      "fertility": 0.2,
+      "hardness": 0.75
+    },
+    {
+      "type": "terrain.grid",
+      "id": "terrain.demo.basic",
+      "widthInCells": 10,
+      "heightInCells": 10,
+      "cellSizeMeters": 1.0,
+      "defaultSoil": "soil.loam",
+      "generationKind": "Slope",
+      "maxElevationMeters": 9.0
+    }
+  ]
+}

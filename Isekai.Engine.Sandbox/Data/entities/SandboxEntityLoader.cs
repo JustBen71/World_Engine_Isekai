@@ -11,6 +11,7 @@ using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
 using Isekai.Engine.Modules.Temperature;
+using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
 using Isekai.Engine.Sandbox.Components;
 
@@ -83,6 +84,7 @@ public sealed class SandboxEntityLoader
         if (definition.Position is not null)
         {
             entity.AddComponent(new Position2DComponent(definition.Position.X, definition.Position.Y));
+            entity.AddComponent(new PositionComponent(new WorldPosition(definition.Position.X, definition.Position.Y, 0)));
         }
 
         entity.AddComponent(new TemperatureComponent(definition.Temperature));

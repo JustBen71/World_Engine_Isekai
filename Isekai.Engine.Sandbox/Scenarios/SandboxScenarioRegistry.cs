@@ -67,7 +67,14 @@ public static class SandboxScenarioRegistry
             "Trois entites identiques evoluent vers des ambiances froides, temperees et chaudes selon leur position.",
             "thermal_zones.json",
             30,
-            UseLocalAmbientTemperatureProvider: true)
+            UseLocalAmbientTemperatureProvider: true),
+        new(
+            "terrain-basic",
+            "Terrain de base",
+            "Affiche une grille 10x10, ses altitudes, ses sols et la cellule terrain de quelques entites.",
+            "terrain_basic.json",
+            5,
+            ShowTerrainDiagnostics: true)
     ];
 
     /// <summary>

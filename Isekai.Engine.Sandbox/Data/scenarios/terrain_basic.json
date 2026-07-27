@@ -1,0 +1,24 @@
+{
+  "entities": [
+    {
+      "name": "Explorateur terrain",
+      "glyph": "\ud83e\uddcd",
+      "position": { "x": 1, "y": 1 },
+      "temperature": 20.0
+    },
+    {
+      "name": "Pierre de pente",
+      "glyph": "\ud83e\udea8",
+      "material": "material.stone",
+      "volume": 0.2,
+      "position": { "x": 5, "y": 4 },
+      "temperature": 18.0
+    },
+    {
+      "name": "Balise colline",
+      "glyph": "\u26f3",
+      "position": { "x": 8, "y": 8 },
+      "temperature": 17.0
+    }
+  ]
+}

@@ -12,6 +12,7 @@ using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
 using Isekai.Engine.Modules.Temperature;
+using Isekai.Engine.Modules.Terrain;
 using Isekai.Engine.Modules.Vitals;
 using Isekai.Engine.Sandbox.Components;
 using Isekai.Engine.Sandbox.Data.Entities;
@@ -38,8 +39,14 @@ try
     var map = new SandboxMap(width, height);
     var modules = CreateModules(scenario, map);
     var definitions = LoadDefinitions(dataDirectory, modules, logger);
+    var terrainService = CreateTerrainService(definitions);
     var world = CreateWorld(definitions, logger, map, modules, entityFile);
     var renderer = new SpectreWorldRenderer(map, frameDelayMilliseconds: 250);
+
+    if (scenario.ShowTerrainDiagnostics)
+    {
+        RenderTerrainDiagnostics(world, terrainService);
+    }
 
     renderer.Run(world, tickCount);
 }
@@ -111,6 +118,7 @@ static IReadOnlyCollection<IEngineModule> CreateModules(SandboxScenario scenario
         new HandlingModule(),
         new BodyCapabilitiesModule(),
         new ImpactModule(),
+        new TerrainModule(),
         new VitalsModule(),
         new TemperatureModule(ambientProvider)
     };
@@ -135,6 +143,17 @@ static DefinitionRegistry LoadDefinitions(
         logger);
 
     return pipeline.LoadDirectory(dataDirectory);
+}
+
+static ITerrainService CreateTerrainService(DefinitionRegistry definitions)
+{
+    var definition = definitions.Get<TerrainGridDefinition>(DefinitionId.From("terrain.demo.basic"));
+    var grid = new SimpleTerrainGenerator().Generate(new TerrainGenerationRequest(definition));
+
+    grid.SetSoil(new TerrainCellCoordinate(7, 1), DefinitionId.From("soil.gravel"));
+    grid.SetSoil(new TerrainCellCoordinate(8, 8), DefinitionId.From("soil.clay"));
+
+    return new TerrainService(grid);
 }
 
 static WorldState CreateWorld(
@@ -166,4 +185,33 @@ static WorldState CreateWorld(
     new SandboxEntityLoader().LoadFileInto(entityFile, world);
 
     return world;
+}
+
+static void RenderTerrainDiagnostics(WorldState world, ITerrainService terrainService)
+{
+    var grid = terrainService.Grid;
+    var center = new TerrainCellCoordinate(5, 5);
+    var centerCell = grid.GetCell(center);
+    var neighbors = string.Join(", ", grid.GetNeighbors8(center).Select(coordinate => $"({coordinate.X},{coordinate.Y})"));
+
+    AnsiConsole.WriteLine();
+    AnsiConsole.MarkupLine("[bold yellow]Terrain diagnostics[/]");
+    AnsiConsole.MarkupLine($"Grid: {grid.WidthInCells}x{grid.HeightInCells}, cell={grid.CellSizeMeters:0.##}m");
+    AnsiConsole.MarkupLine($"Center: ({center.X},{center.Y}) elevation={centerCell.ElevationMeters:0.##}m soil={Markup.Escape(centerCell.SoilDefinitionId.Value)}");
+    AnsiConsole.MarkupLine($"Neighbors8: {Markup.Escape(neighbors)}");
+
+    foreach (var entity in world.EntitiesWith<PositionComponent>())
+    {
+        var name = entity.TryGetComponent<NameComponent>(out var nameComponent) && nameComponent is not null
+            ? nameComponent.Name
+            : entity.Id.Value.ToString();
+        var position = entity.GetComponent<PositionComponent>().Position;
+        var coordinate = terrainService.GetCellAt(position);
+        var cell = grid.GetCell(coordinate);
+
+        AnsiConsole.MarkupLine(
+            $"{Markup.Escape(name)} -> position=({position.X:0.##},{position.Y:0.##},{position.Z:0.##}) cell=({coordinate.X},{coordinate.Y}) elevation={cell.ElevationMeters:0.##}m soil={Markup.Escape(cell.SoilDefinitionId.Value)}");
+    }
+
+    AnsiConsole.WriteLine();
 }
