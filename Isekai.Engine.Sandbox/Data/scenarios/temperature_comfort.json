@@ -1,0 +1,34 @@
+{
+  "entities": [
+    {
+      "name": "Humain refroidi",
+      "glyph": "\ud83e\uddcd",
+      "material": "material.flesh",
+      "body": "body.human.basic",
+      "volume": 0.075,
+      "position": { "x": 3, "y": 3 },
+      "temperature": 34.5,
+      "thermalSensitivity": { "comfortableMinimum": 36.0, "comfortableMaximum": 38.0 },
+      "blood": { "currentVolumeLiters": 5.0, "maxVolumeLiters": 5.0 }
+    },
+    {
+      "name": "Cerf refroidi",
+      "glyph": "\ud83e\udd8c",
+      "material": "material.flesh",
+      "body": "body.deer.basic",
+      "volume": 0.055,
+      "position": { "x": 12, "y": 2 },
+      "temperature": 36.5,
+      "thermalSensitivity": { "comfortableMinimum": 37.0, "comfortableMaximum": 39.5 },
+      "blood": { "currentVolumeLiters": 4.0, "maxVolumeLiters": 4.0 }
+    },
+    {
+      "name": "Fer froid",
+      "glyph": "\u2699\ufe0f",
+      "material": "material.iron",
+      "volume": 0.25,
+      "position": { "x": 15, "y": 4 },
+      "temperature": 5.0
+    }
+  ]
+}

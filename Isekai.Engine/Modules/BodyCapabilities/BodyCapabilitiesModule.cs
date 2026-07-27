@@ -3,15 +3,15 @@ using Isekai.Engine.Core.Definitions;
 using Isekai.Engine.Core.Modules;
 using Isekai.Engine.Data.Definitions;
 
-namespace Isekai.Engine.Modules.Impact;
+namespace Isekai.Engine.Modules.BodyCapabilities;
 
 /// <summary>
-/// Provides generic contact and impact integration points.
+/// Provides systems for using authorized body parts as physical capabilities.
 /// </summary>
-public sealed class ImpactModule : IEngineModule
+public sealed class BodyCapabilitiesModule : IEngineModule
 {
     /// <inheritdoc />
-    public string Name => "Impact";
+    public string Name => "BodyCapabilities";
 
     /// <inheritdoc />
     public void RegisterDefinitionTypes(DefinitionTypeRegistry registry)
@@ -29,9 +29,6 @@ public sealed class ImpactModule : IEngineModule
     public void RegisterSystems(WorldState world)
     {
         ArgumentNullException.ThrowIfNull(world);
-        world.RegisterSystem(new ImpactResolutionSystem());
-        world.RegisterSystem(new ImpactToBodyDamageSystem());
-        world.RegisterSystem(new ImpactContactWearSystem());
-        world.RegisterSystem(new ImpactInjuryBridgeSystem());
+        world.RegisterSystem(new BodyImpactSystem());
     }
 }

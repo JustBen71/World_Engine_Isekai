@@ -1,5 +1,6 @@
 using Isekai.Engine.Core.System;
 using Isekai.Engine.Modules.Body;
+using Isekai.Engine.Modules.BodyCapabilities;
 
 namespace Isekai.Engine.Modules.Impact;
 
@@ -8,7 +9,7 @@ namespace Isekai.Engine.Modules.Impact;
 /// </summary>
 public sealed class ImpactContactWearSystem : IWorldSystem
 {
-    private const double WearScale = 0.01;
+    private const double WearScale = 0.006;
 
     /// <inheritdoc />
     public void Execute(WorldSystemExecutionContext context)
@@ -25,6 +26,7 @@ public sealed class ImpactContactWearSystem : IWorldSystem
 
             if (!context.World.TryGetEntity(result.ContactEntityId, out var contactEntity) ||
                 contactEntity is null ||
+                contactEntity.HasComponent<BodyContactSurfacesComponent>() ||
                 !contactEntity.TryGetComponent<ContactSurfaceComponent>(out var surface) ||
                 surface is null ||
                 !contactEntity.TryGetComponent<BodyStateComponent>(out var body) ||

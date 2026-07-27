@@ -3,7 +3,9 @@ using System.Text.Json.Serialization;
 using Isekai.Engine.Core;
 using Isekai.Engine.Core.Definitions;
 using Isekai.Engine.Modules.Body;
+using Isekai.Engine.Modules.BodyCapabilities;
 using Isekai.Engine.Modules.Composition;
+using Isekai.Engine.Modules.Handling;
 using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
@@ -61,11 +63,15 @@ public sealed class SandboxEntityLoader
             if (definition.Composite is null)
             {
                 AddImpactRequestIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
+                AddHandlingComponentsIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
+                AddBodyImpactIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
                 continue;
             }
 
             AddCompositeComponent(entitiesByName[definition.Name], definition, entitiesByName);
             AddImpactRequestIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
+            AddHandlingComponentsIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
+            AddBodyImpactIfNeeded(entitiesByName[definition.Name], definition, entitiesByName);
         }
     }
 
@@ -148,6 +154,48 @@ public sealed class SandboxEntityLoader
                 definition.ImpactResistance.FractureResistance));
         }
 
+        if (definition.ImpactInjuryProfile is not null)
+        {
+            entity.AddComponent(new ImpactInjuryProfileComponent(definition.ImpactInjuryProfile.Rules
+                .Select(rule => new ImpactInjuryRule(
+                    rule.Outcome,
+                    DefinitionReference<InjuryDefinition>.From(rule.Injury),
+                    rule.MinimumSeverity,
+                    rule.SeverityPerImpactRatio,
+                    rule.BleedingSeverity))
+                .ToArray()));
+        }
+
+        if (definition.GripCapability is not null)
+        {
+            entity.AddComponent(new GripCapabilityComponent(
+                definition.GripCapability.MaxGripForce,
+                definition.GripCapability.ManipulationForce,
+                definition.GripCapability.Precision));
+        }
+
+        if (definition.BodyImpactCapability is not null)
+        {
+            entity.AddComponent(new BodyImpactCapabilityComponent(
+                definition.BodyImpactCapability.MaxForce,
+                definition.BodyImpactCapability.ImpactForce,
+                definition.BodyImpactCapability.Precision));
+        }
+
+        if (definition.BodyContactSurfaces is { Length: > 0 })
+        {
+            entity.AddComponent(new BodyContactSurfacesComponent(definition.BodyContactSurfaces
+                .Select(surface => new BodyContactSurface(
+                    surface.Role,
+                    surface.BodyPart,
+                    surface.Hardness,
+                    surface.Sharpness,
+                    surface.Penetration,
+                    surface.EdgeRetention,
+                    surface.ContactArea))
+                .ToArray()));
+        }
+
         return entity;
     }
 
@@ -228,5 +276,88 @@ public sealed class SandboxEntityLoader
             targetEntity.Id,
             definition.Impact.Force,
             definition.Impact.TargetBodyPart));
+    }
+
+    private static void AddHandlingComponentsIfNeeded(
+        Entity entity,
+        SandboxEntityDefinition definition,
+        IReadOnlyDictionary<string, Entity> entitiesByName)
+    {
+        if (definition.HeldEntities is { Length: > 0 })
+        {
+            entity.AddComponent(new HeldEntitiesComponent(definition.HeldEntities
+                .Select(held => CreateHeldEntity(held, entitiesByName))
+                .ToArray()));
+        }
+
+        if (definition.HandledImpact is not null)
+        {
+            entity.AddComponent(CreateHandledImpact(definition.HandledImpact, entitiesByName));
+        }
+    }
+
+    private static HeldEntity CreateHeldEntity(
+        SandboxHeldEntityData held,
+        IReadOnlyDictionary<string, Entity> entitiesByName)
+    {
+        if (!entitiesByName.TryGetValue(held.Entity, out var heldEntity))
+        {
+            throw new InvalidOperationException($"Held entity '{held.Entity}' could not be resolved.");
+        }
+
+        return new HeldEntity(heldEntity.Id, held.Slot, held.GripQuality);
+    }
+
+    private static HandledImpactComponent CreateHandledImpact(
+        SandboxHandledImpactData impact,
+        IReadOnlyDictionary<string, Entity> entitiesByName)
+    {
+        if (!entitiesByName.TryGetValue(impact.HeldEntity, out var heldEntity))
+        {
+            throw new InvalidOperationException($"Handled impact held entity '{impact.HeldEntity}' could not be resolved.");
+        }
+
+        if (!entitiesByName.TryGetValue(impact.ContactEntity, out var contactEntity))
+        {
+            throw new InvalidOperationException($"Handled impact contact entity '{impact.ContactEntity}' could not be resolved.");
+        }
+
+        if (!entitiesByName.TryGetValue(impact.TargetEntity, out var targetEntity))
+        {
+            throw new InvalidOperationException($"Handled impact target entity '{impact.TargetEntity}' could not be resolved.");
+        }
+
+        return new HandledImpactComponent(
+            heldEntity.Id,
+            contactEntity.Id,
+            targetEntity.Id,
+            impact.Effort,
+            impact.TicksRemaining,
+            impact.TicksBetweenImpacts,
+            TargetBodyPartId: impact.TargetBodyPart);
+    }
+
+    private static void AddBodyImpactIfNeeded(
+        Entity entity,
+        SandboxEntityDefinition definition,
+        IReadOnlyDictionary<string, Entity> entitiesByName)
+    {
+        if (definition.BodyImpact is null)
+        {
+            return;
+        }
+
+        if (!entitiesByName.TryGetValue(definition.BodyImpact.TargetEntity, out var targetEntity))
+        {
+            throw new InvalidOperationException($"Body impact target entity '{definition.BodyImpact.TargetEntity}' could not be resolved.");
+        }
+
+        entity.AddComponent(new BodyImpactComponent(
+            definition.BodyImpact.ContactRole,
+            targetEntity.Id,
+            definition.BodyImpact.Effort,
+            definition.BodyImpact.TicksRemaining,
+            definition.BodyImpact.TicksBetweenImpacts,
+            TargetBodyPartId: definition.BodyImpact.TargetBodyPart));
     }
 }

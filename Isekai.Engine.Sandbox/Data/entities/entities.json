@@ -28,17 +28,17 @@
       "temperature": 11.0
     },
     {
-      "name": "Arbre",
+      "name": "Jeune arbre",
       "glyph": "\ud83c\udf33",
       "material": "material.wood",
-      "body": "body.tree.simple",
-      "volume": 3.0,
+      "body": "body.tree.young",
+      "volume": 0.9,
       "position": { "x": 5, "y": 3 },
       "temperature": 18.0,
       "impactResistance": {
-        "hardness": 0.8,
-        "toughness": 1.2,
-        "fractureResistance": 0.9
+        "hardness": 0.45,
+        "toughness": 0.55,
+        "fractureResistance": 0.45
       },
       "injuries": [
         {
@@ -54,8 +54,7 @@
       "material": "material.flesh",
       "body": "body.human.basic",
       "volume": 0.075,
-      "position": { "x": 3, "y": 4 },
-      "velocity": { "deltaX": 1, "deltaY": 0 },
+      "position": { "x": 4, "y": 4 },
       "temperature": 36.8,
       "thermalSensitivity": {
         "comfortableMinimum": 36.0,
@@ -68,6 +67,27 @@
       "naturalRecovery": {
         "tissueRecoveryPerSecond": 0.001,
         "bleedingRecoveryPerSecond": 0.002
+      },
+      "gripCapability": {
+        "maxGripForce": 70,
+        "manipulationForce": 45,
+        "precision": 0.9
+      },
+      "heldEntities": [
+        {
+          "entity": "Hache os-silex",
+          "slot": "right_hand",
+          "gripQuality": 0.85
+        }
+      ],
+      "handledImpact": {
+        "heldEntity": "Hache os-silex",
+        "contactEntity": "Silex taille",
+        "targetEntity": "Jeune arbre",
+        "effort": 1.0,
+        "ticksRemaining": 30,
+        "ticksBetweenImpacts": 3,
+        "targetBodyPart": "trunk"
       },
       "injuries": [
         {
@@ -166,14 +186,7 @@
       "name": "Hache os-silex",
       "glyph": "\ud83e\ude93",
       "materials": [],
-      "position": { "x": 20, "y": 4 },
       "temperature": 18.0,
-      "impact": {
-        "contactEntity": "Silex taille",
-        "targetEntity": "Arbre",
-        "force": 45,
-        "targetBodyPart": "trunk"
-      },
       "composite": {
         "parts": [
           {
@@ -203,7 +216,6 @@
           "volume": 0.00003
         }
       ],
-      "position": { "x": 22, "y": 4 },
       "temperature": 18.0,
       "composite": {
         "parts": [

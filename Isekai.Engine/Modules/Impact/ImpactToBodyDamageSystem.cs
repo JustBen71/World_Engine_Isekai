@@ -8,7 +8,7 @@ namespace Isekai.Engine.Modules.Impact;
 /// </summary>
 public sealed class ImpactToBodyDamageSystem : IWorldSystem
 {
-    private const double DamageScale = 0.06;
+    private const double DamageScale = 0.11;
 
     /// <inheritdoc />
     public void Execute(WorldSystemExecutionContext context)

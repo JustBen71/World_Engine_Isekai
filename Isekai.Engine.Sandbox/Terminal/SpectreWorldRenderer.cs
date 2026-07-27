@@ -2,6 +2,7 @@ using System.Globalization;
 using Isekai.Engine.Core;
 using Isekai.Engine.Modules.Body;
 using Isekai.Engine.Modules.Composition;
+using Isekai.Engine.Modules.Handling;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
 using Isekai.Engine.Modules.Materials;
@@ -135,11 +136,13 @@ public sealed class SpectreWorldRenderer
         table.AddRow("Map temp", $"{FormatTemperature(stats.Average)} avg | {FormatTemperature(stats.Minimum)} min | {FormatTemperature(stats.Maximum)} max");
         table.AddRow("Ambient", FormatTemperature(ReadEngineAmbient(world)));
         table.AddRow("Terrain", "[green]prairie[/] [darkgreen]forest[/] [blue]water[/] [grey]mountain[/]");
-        table.AddRow("Keys", "B=body, C=composite, K=impact, Blood=blood, I=injury");
+        table.AddRow("Keys", "B=body, C=composite, H=held/action, K=impact, Blood=blood, I=injury");
         table.AddRow("[bold]Entities[/]", string.Empty);
 
-        foreach (var entity in world.EntitiesWith<Position2DComponent>()
+        foreach (var entity in ReadDisplayedEntities(world)
                      .OrderByDescending(entity => entity.HasComponent<CompositeComponent>())
+                     .ThenByDescending(entity => entity.HasComponent<HandledImpactComponent>())
+                     .ThenByDescending(entity => entity.HasComponent<ImpactResistanceComponent>())
                      .ThenBy(ReadEntityName, StringComparer.Ordinal))
         {
             var name = entity.TryGetComponent<NameComponent>(out var nameComponent) && nameComponent is not null
@@ -182,10 +185,11 @@ public sealed class SpectreWorldRenderer
             var impact = entity.TryGetComponent<ImpactResultComponent>(out var impactResult) && impactResult is not null
                 ? FormatImpact(impactResult)
                 : "[grey]-[/]";
+            var handling = FormatHandling(entity);
 
             table.AddRow(
                 $"{glyph} {Markup.Escape(name)}",
-                $"{position} {mass} {temperature} {comfort} B{body} C{composite} K{impact} Blood{blood} I{injuries} {vital}");
+                $"{position} {mass} {temperature} {comfort} {vital} B{body} C{composite} H{handling} K{impact} Blood{blood} I{injuries}");
         }
 
         return new Panel(table)
@@ -270,6 +274,16 @@ public sealed class SpectreWorldRenderer
         }
 
         return symbols;
+    }
+
+    private static IReadOnlyCollection<Core.Entity> ReadDisplayedEntities(WorldState world)
+    {
+        return world.Entities
+            .Where(entity => entity.HasComponent<Position2DComponent>() ||
+                             entity.HasComponent<CompositeComponent>() ||
+                             entity.HasComponent<HeldEntitiesComponent>() ||
+                             entity.HasComponent<HandledImpactComponent>())
+            .ToArray();
     }
 
     private static string RenderTerrain(TerrainKind terrain)
@@ -415,9 +429,17 @@ public sealed class SpectreWorldRenderer
 
     private static string FormatVitalState(VitalStateComponent vital)
     {
-        return vital.IsAlive
-            ? string.Empty
-            : $"[red]dead:{Markup.Escape(vital.DeathReason ?? "unknown")}[/]";
+        if (vital.IsAlive)
+        {
+            return string.Empty;
+        }
+
+        var reason = vital.DeathReason ?? "unknown";
+        var label = reason.StartsWith("vital_part_destroyed:structure:", StringComparison.Ordinal)
+            ? "broken"
+            : "dead";
+
+        return $"[red]{label}:{Markup.Escape(reason)}[/]";
     }
 
     private static string FormatImpact(ImpactResultComponent impact)
@@ -431,6 +453,21 @@ public sealed class SpectreWorldRenderer
             ImpactOutcome.Crack or ImpactOutcome.Cut => $"[yellow]{text}[/]",
             _ => $"[red]{text}[/]"
         };
+    }
+
+    private static string FormatHandling(Core.Entity entity)
+    {
+        var heldCount = entity.TryGetComponent<HeldEntitiesComponent>(out var held) && held is not null
+            ? held.Entities.Count
+            : 0;
+
+        var action = entity.TryGetComponent<HandledImpactComponent>(out var handledImpact) && handledImpact is not null
+            ? $"a{handledImpact.TicksRemaining.ToString(CultureInfo.InvariantCulture)}"
+            : string.Empty;
+
+        return heldCount > 0 || !string.IsNullOrWhiteSpace(action)
+            ? $"{heldCount.ToString(CultureInfo.InvariantCulture)}{action}"
+            : "[grey]-[/]";
     }
 
     private static string FormatInjuries(WorldState world, InjuryComponent injuries)

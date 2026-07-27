@@ -1,0 +1,36 @@
+{
+  "entities": [
+    {
+      "name": "Humain mobile",
+      "glyph": "\ud83e\uddcd",
+      "material": "material.flesh",
+      "body": "body.human.basic",
+      "volume": 0.075,
+      "position": { "x": 1, "y": 1 },
+      "velocity": { "deltaX": 1, "deltaY": 0 },
+      "temperature": 36.8,
+      "thermalSensitivity": { "comfortableMinimum": 36.0, "comfortableMaximum": 38.0 },
+      "blood": { "currentVolumeLiters": 5.0, "maxVolumeLiters": 5.0 }
+    },
+    {
+      "name": "Cerf mobile",
+      "glyph": "\ud83e\udd8c",
+      "material": "material.flesh",
+      "body": "body.deer.basic",
+      "volume": 0.055,
+      "position": { "x": 14, "y": 2 },
+      "velocity": { "deltaX": -1, "deltaY": 1 },
+      "temperature": 38.2,
+      "thermalSensitivity": { "comfortableMinimum": 37.0, "comfortableMaximum": 39.5 },
+      "blood": { "currentVolumeLiters": 4.0, "maxVolumeLiters": 4.0 }
+    },
+    {
+      "name": "Pierre immobile",
+      "glyph": "\ud83e\udea8",
+      "material": "material.stone",
+      "volume": 0.5,
+      "position": { "x": 8, "y": 4 },
+      "temperature": 11.0
+    }
+  ]
+}

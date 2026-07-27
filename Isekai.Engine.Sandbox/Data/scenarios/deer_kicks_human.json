@@ -1,0 +1,69 @@
+{
+  "entities": [
+    {
+      "name": "Humain",
+      "glyph": "\ud83e\uddcd",
+      "material": "material.flesh",
+      "body": "body.human.basic",
+      "volume": 0.075,
+      "position": { "x": 9, "y": 3 },
+      "temperature": 36.8,
+      "thermalSensitivity": { "comfortableMinimum": 36.0, "comfortableMaximum": 38.0 },
+      "blood": { "currentVolumeLiters": 5.0, "maxVolumeLiters": 5.0 },
+      "impactResistance": { "hardness": 0.6, "toughness": 0.8, "fractureResistance": 0.6 },
+      "impactInjuryProfile": {
+        "rules": [
+          {
+            "outcome": "Puncture",
+            "injury": "injury.generic.deep_cut",
+            "minimumSeverity": 0.45,
+            "severityPerImpactRatio": 0.12,
+            "bleedingSeverity": "Severe"
+          },
+          {
+            "outcome": "Fracture",
+            "injury": "injury.generic.fracture",
+            "minimumSeverity": 0.55,
+            "severityPerImpactRatio": 0.1,
+            "bleedingSeverity": "Moderate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Cerf",
+      "glyph": "\ud83e\udd8c",
+      "material": "material.flesh",
+      "body": "body.deer.basic",
+      "volume": 0.055,
+      "position": { "x": 8, "y": 3 },
+      "temperature": 38.2,
+      "thermalSensitivity": { "comfortableMinimum": 37.0, "comfortableMaximum": 39.5 },
+      "blood": { "currentVolumeLiters": 4.0, "maxVolumeLiters": 4.0 },
+      "bodyImpactCapability": {
+        "maxForce": 120,
+        "impactForce": 70,
+        "precision": 1.0
+      },
+      "bodyContactSurfaces": [
+        {
+          "role": "front_hoof",
+          "bodyPart": "front_legs",
+          "hardness": 1.1,
+          "sharpness": 0.3,
+          "penetration": 0.8,
+          "edgeRetention": 1.2,
+          "contactArea": 0.02
+        }
+      ],
+      "bodyImpact": {
+        "contactRole": "front_hoof",
+        "targetEntity": "Humain",
+        "effort": 1.0,
+        "ticksRemaining": 45,
+        "ticksBetweenImpacts": 3,
+        "targetBodyPart": "right_leg"
+      }
+    }
+  ]
+}

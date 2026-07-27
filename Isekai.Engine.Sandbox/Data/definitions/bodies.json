@@ -20,6 +20,25 @@
     },
     {
       "type": "body.definition",
+      "id": "body.tree.young",
+      "parts": [
+        {
+          "id": "trunk",
+          "name": "Young trunk",
+          "material": "material.wood",
+          "maxIntegrity": 35,
+          "vitalRole": "structure"
+        },
+        {
+          "id": "branches",
+          "name": "Young branches",
+          "material": "material.wood",
+          "maxIntegrity": 12
+        }
+      ]
+    },
+    {
+      "type": "body.definition",
       "id": "body.human.basic",
       "parts": [
         {

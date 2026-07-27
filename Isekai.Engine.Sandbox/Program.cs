@@ -4,7 +4,9 @@ using Isekai.Engine.Core.Modules;
 using Isekai.Engine.Data.Definitions;
 using Isekai.Engine.Diagnostics;
 using Isekai.Engine.Modules.Body;
+using Isekai.Engine.Modules.BodyCapabilities;
 using Isekai.Engine.Modules.Composition;
+using Isekai.Engine.Modules.Handling;
 using Isekai.Engine.Modules.Healing;
 using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Impact;
@@ -13,19 +15,26 @@ using Isekai.Engine.Modules.Temperature;
 using Isekai.Engine.Modules.Vitals;
 using Isekai.Engine.Sandbox.Components;
 using Isekai.Engine.Sandbox.Data.Entities;
+using Isekai.Engine.Sandbox.Scenarios;
 using Isekai.Engine.Sandbox.Systems;
 using Isekai.Engine.Sandbox.Terminal;
 using Isekai.Engine.Sandbox.World;
+using Spectre.Console;
 
 const int width = 30;
 const int height = 7;
-var tickCount = ReadTickCount(args);
 var dataDirectory = Path.Combine(AppContext.BaseDirectory, "Data", "definitions");
-var entityFile = Path.Combine(AppContext.BaseDirectory, "Data", "entities", "entities.json");
+var scenarioDirectory = Path.Combine(AppContext.BaseDirectory, "Data", "scenarios");
+var scenario = SelectScenario(args);
+var tickCount = ReadTickCount(args, scenario.DefaultTicks);
+var entityFile = Path.Combine(scenarioDirectory, scenario.EntityFileName);
 
 var logger = CreateLogger(args);
 try
 {
+    AnsiConsole.MarkupLine($"[bold green]Scenario:[/] {Markup.Escape(scenario.Name)}");
+    AnsiConsole.MarkupLine($"[grey]{Markup.Escape(scenario.Description)}[/]");
+
     var modules = CreateModules();
     var definitions = LoadDefinitions(dataDirectory, modules, logger);
     var map = new SandboxMap(width, height);
@@ -42,9 +51,32 @@ finally
     }
 }
 
-static int ReadTickCount(string[] args)
+static SandboxScenario SelectScenario(string[] args)
 {
-    const int defaultTickCount = 30;
+    var scenarioOption = args.FirstOrDefault(arg => arg.StartsWith("--scenario=", StringComparison.OrdinalIgnoreCase));
+    if (scenarioOption is not null)
+    {
+        var id = scenarioOption["--scenario=".Length..];
+        return SandboxScenarioRegistry.FindById(id) ??
+               throw new ArgumentException($"Unknown sandbox scenario '{id}'.");
+    }
+
+    if (!AnsiConsole.Profile.Capabilities.Interactive)
+    {
+        return SandboxScenarioRegistry.FindById("woodcutting") ??
+               throw new InvalidOperationException("Default sandbox scenario is missing.");
+    }
+
+    return AnsiConsole.Prompt(
+        new SelectionPrompt<SandboxScenario>()
+            .Title("[bold]Choisis le scenario sandbox a lancer[/]")
+            .PageSize(10)
+            .UseConverter(scenario => $"{scenario.Name} [grey]({scenario.Id})[/]")
+            .AddChoices(SandboxScenarioRegistry.All));
+}
+
+static int ReadTickCount(string[] args, int defaultTickCount)
+{
     var ticksOption = args.FirstOrDefault(arg => arg.StartsWith("--ticks=", StringComparison.OrdinalIgnoreCase));
     if (ticksOption is null)
     {
@@ -70,10 +102,12 @@ static IReadOnlyCollection<IEngineModule> CreateModules()
         new BodyModule(),
         new InjuryModule(),
         new HealingModule(),
-        new VitalsModule(),
         new MaterialModule(),
-        new ImpactModule(),
         new CompositionModule(),
+        new HandlingModule(),
+        new BodyCapabilitiesModule(),
+        new ImpactModule(),
+        new VitalsModule(),
         new TemperatureModule()
     };
 }

@@ -1,0 +1,28 @@
+{
+  "entities": [
+    {
+      "name": "Eau froide",
+      "glyph": "\ud83d\udca7",
+      "material": "material.water",
+      "volume": 1.25,
+      "position": { "x": 2, "y": 2 },
+      "temperature": 4.0
+    },
+    {
+      "name": "Fer chaud",
+      "glyph": "\u2699\ufe0f",
+      "material": "material.iron",
+      "volume": 0.25,
+      "position": { "x": 11, "y": 3 },
+      "temperature": 80.0
+    },
+    {
+      "name": "Pierre tiede",
+      "glyph": "\ud83e\udea8",
+      "material": "material.stone",
+      "volume": 0.5,
+      "position": { "x": 17, "y": 4 },
+      "temperature": 28.0
+    }
+  ]
+}

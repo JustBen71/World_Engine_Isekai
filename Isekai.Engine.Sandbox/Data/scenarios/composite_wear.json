@@ -1,0 +1,80 @@
+{
+  "entities": [
+    {
+      "name": "Bloc de pierre",
+      "glyph": "\ud83e\udea8",
+      "material": "material.stone",
+      "body": "body.tree.young",
+      "volume": 0.6,
+      "position": { "x": 7, "y": 3 },
+      "temperature": 12.0,
+      "impactResistance": { "hardness": 1.7, "toughness": 1.6, "fractureResistance": 1.8 }
+    },
+    {
+      "name": "Humain",
+      "glyph": "\ud83e\uddcd",
+      "material": "material.flesh",
+      "body": "body.human.basic",
+      "volume": 0.075,
+      "position": { "x": 6, "y": 4 },
+      "temperature": 36.8,
+      "thermalSensitivity": { "comfortableMinimum": 36.0, "comfortableMaximum": 38.0 },
+      "blood": { "currentVolumeLiters": 5.0, "maxVolumeLiters": 5.0 },
+      "gripCapability": { "maxGripForce": 70, "manipulationForce": 55, "precision": 0.85 },
+      "heldEntities": [{ "entity": "Hache os-silex", "slot": "right_hand", "gripQuality": 0.8 }],
+      "handledImpact": {
+        "heldEntity": "Hache os-silex",
+        "contactEntity": "Silex taille",
+        "targetEntity": "Bloc de pierre",
+        "effort": 1.0,
+        "ticksRemaining": 30,
+        "ticksBetweenImpacts": 2,
+        "targetBodyPart": "trunk"
+      }
+    },
+    {
+      "name": "Os long",
+      "glyph": "\ud83e\uddb4",
+      "material": "material.bone",
+      "body": "body.tool.bone_handle",
+      "volume": 0.001,
+      "temperature": 18.0
+    },
+    {
+      "name": "Silex taille",
+      "glyph": "\ud83e\udea8",
+      "material": "material.flint",
+      "body": "body.tool.flint_head",
+      "volume": 0.0003,
+      "temperature": 18.0,
+      "contactSurface": {
+        "hardness": 1.2,
+        "sharpness": 1.8,
+        "penetration": 1.4,
+        "edgeRetention": 0.5,
+        "contactArea": 0.012
+      }
+    },
+    {
+      "name": "Liane jungle",
+      "glyph": "\ud83e\uddf5",
+      "material": "material.vine",
+      "body": "body.tool.vine_binding",
+      "volume": 0.00005,
+      "temperature": 18.0
+    },
+    {
+      "name": "Hache os-silex",
+      "glyph": "\ud83e\ude93",
+      "materials": [],
+      "temperature": 18.0,
+      "composite": {
+        "parts": [
+          { "role": "body", "entity": "Os long", "isStructural": true },
+          { "role": "head", "entity": "Silex taille", "isStructural": true },
+          { "role": "binding", "entity": "Liane jungle", "isStructural": true }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "entities": [
+    {
+      "name": "Humain hemorragie",
+      "glyph": "\ud83e\uddcd",
+      "material": "material.flesh",
+      "body": "body.human.basic",
+      "volume": 0.075,
+      "position": { "x": 6, "y": 3 },
+      "temperature": 36.8,
+      "thermalSensitivity": { "comfortableMinimum": 36.0, "comfortableMaximum": 38.0 },
+      "blood": { "currentVolumeLiters": 3.0, "maxVolumeLiters": 5.0 },
+      "injuries": [
+        {
+          "injury": "injury.generic.deep_cut",
+          "bodyPart": "torso",
+          "severity": 1.0,
+          "bleedingSeverity": "Massive"
+        }
+      ]
+    }
+  ]
+}

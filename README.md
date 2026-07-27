@@ -57,8 +57,11 @@ Isekai.Engine.Sandbox/
   Data/
     definitions/
     entities/
+    scenarios/
+  Scenarios/
   Systems/
   Terminal/
+  World/
 ```
 
 `Isekai.Engine` contient le Core du moteur.
@@ -69,14 +72,20 @@ Isekai.Engine.Sandbox/
 
 1. Ouvrez `World_Engine_Isekai.sln`.
 2. Attendez que Rider restaure les packages NuGet.
-3. Dans l'explorateur de projet, ouvrez `Isekai.Engine.Tests`.
-4. Faites clic droit sur le projet `Isekai.Engine.Tests`.
-5. Cliquez sur `Run Unit Tests`.
+3. Dans la liste des configurations, selectionnez `Tests - All`.
+4. Lancez `Run` pour executer tous les tests unitaires.
+5. Selectionnez ensuite `Tests - Sandbox Scenarios`.
+6. Lancez `Run` pour verifier uniquement les scenarios sandbox.
+
+Configurations disponibles :
+
+- `Tests - All` : execute toute la suite xUnit du projet `Isekai.Engine.Tests`.
+- `Tests - Sandbox Scenarios` : execute les regressions `SandboxScenarioRegressionTests`.
 
 Resultat attendu :
 
 ```text
-116 tests passed
+137 tests passed
 0 failed
 ```
 
@@ -101,7 +110,7 @@ Depuis Rider :
 
 Configuration disponible :
 
-- `Sandbox Console` : lance la sandbox avec `--ticks=30`.
+- `Sandbox Console` : lance la sandbox avec `--ticks=30` et affiche le menu de scenarios.
 - `Sandbox Console Trace` : lance la sandbox avec `--ticks=10 --trace` et genere `debug.log`.
 
 Depuis PowerShell :
@@ -114,7 +123,23 @@ Options :
 
 ```powershell
 dotnet run --project .\Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj -- --ticks=10
-dotnet run --project .\Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj -- --ticks=10 --trace
+dotnet run --project .\Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj -- --scenario=woodcutting --ticks=30
+dotnet run --project .\Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj -- --scenario=woodcutting --ticks=10 --trace
+```
+
+Sans `--scenario`, la console affiche un menu interactif.
+Les scenarios disponibles sont :
+
+```text
+woodcutting          Coupe de bois
+deer-kicks-human    Cerf contre humain
+free-movement       Deplacements libres
+steel-axe           Hache acier contre arbre
+bleeding            Hemorragie non traitee
+natural-recovery    Recuperation naturelle
+temperature-comfort Confort thermique
+composite-wear      Usure composite
+thermal-materials   Materiaux et temperature
 ```
 
 La sandbox charge :
@@ -123,7 +148,7 @@ La sandbox charge :
 Isekai.Engine.Sandbox/Data/definitions/materials.json
 Isekai.Engine.Sandbox/Data/definitions/bodies.json
 Isekai.Engine.Sandbox/Data/definitions/injuries.json
-Isekai.Engine.Sandbox/Data/entities/entities.json
+Isekai.Engine.Sandbox/Data/scenarios/*.json
 ```
 
 Elle affiche une grille terminal avec des entites, leurs positions, leur masse calculee par `MaterialMassSystem`, leur temperature, leur integrite corporelle et leurs blessures eventuelles.
@@ -135,6 +160,9 @@ Le rendu affiche aussi une carte coloree avec emojis de terrain, ainsi qu'un pan
 - nombre d'entites ;
 - position, masse, temperature, confort thermique, integrite corporelle et blessures de chaque entite.
 
+Les memes fichiers de scenario sont executes par `SandboxScenarioRegressionTests`.
+Ces tests servent de garde-fous : si une formule du moteur change brutalement, un scenario de regression doit le signaler.
+
 Legende terrain :
 
 - prairie : 🌾
@@ -144,14 +172,14 @@ Legende terrain :
 
 Les entites de demonstration sont chargees depuis JSON. Le fichier contient notamment :
 
-- arbre ;
+- jeune arbre ;
 - humain ;
 - cerf ;
 - eau ;
 - fer ;
 - pierre.
 
-L'humain et le cerf ont une sensibilite thermique. L'arbre, l'eau, le fer et la pierre peuvent avoir une temperature physique, mais ne ressentent pas la temperature.
+L'humain et le cerf ont une sensibilite thermique. Le jeune arbre, l'eau, le fer et la pierre peuvent avoir une temperature physique, mais ne ressentent pas la temperature.
 
 ## Activer le debug.log imbrique
 
@@ -404,8 +432,10 @@ Objectif :
 Modules actuels :
 
 - `BodyModule`
+- `BodyCapabilitiesModule`
 - `CompositionModule`
 - `HealingModule`
+- `HandlingModule`
 - `ImpactModule`
 - `InjuryModule`
 - `MaterialModule`
@@ -452,6 +482,72 @@ Hache acier-chene
     iron
 ```
 
+## Module Handling
+
+Le module `Handling` modelise le fait qu'une entite puisse tenir et manier une autre entite.
+Il ne connait pas les humains, les orcs, les arbres animes ou les armes : il relie seulement un porteur, un objet tenu et une action physique.
+
+Types principaux :
+
+- `GripCapabilityComponent` : force maximale, force de manipulation et precision d'un porteur.
+- `HeldEntity` : entite tenue, slot libre et qualite de prise.
+- `HeldEntitiesComponent` : liste des entites tenues par un porteur.
+- `HandledImpactComponent` : action d'impact cadencee avec un objet tenu.
+- `HandledImpactSystem` : genere un `ImpactRequestComponent` seulement quand un coup doit partir.
+
+Exemple conceptuel :
+
+```text
+Humain
+  GripCapability:
+    maxGripForce: 70
+    manipulationForce: 45
+    precision: 0.9
+  HeldEntities:
+    right_hand -> Hache os-silex
+  HandledImpact:
+    heldEntity: Hache os-silex
+    contactEntity: Silex taille
+    targetEntity: Jeune arbre
+    ticksBetweenImpacts: 3
+```
+
+La force de l'impact vient donc du porteur, pas de la hache.
+La hache apporte sa composition, sa masse, sa surface de contact et sa durabilite.
+
+## Module BodyCapabilities
+
+Le module `BodyCapabilities` modelise ce qu'une entite peut faire avec ses propres parties du corps.
+Il sert notamment aux contacts corporels autorises : coup de sabot, coup de poing, coup de tete, morsure ou coup de cou pour une creature qui possede cette capacite.
+
+Types principaux :
+
+- `BodyImpactCapabilityComponent` : force corporelle maximale, force d'impact et precision.
+- `BodyContactSurface` : role autorise, partie du corps utilisee et proprietes de contact.
+- `BodyContactSurfacesComponent` : surfaces corporelles autorisees, chacune liee a une partie du corps.
+- `BodyImpactComponent` : action d'impact cadencee avec une surface corporelle autorisee.
+- `BodyImpactSystem` : genere un `ImpactRequestComponent` depuis le corps de l'acteur.
+
+Exemple de contact corporel :
+
+```text
+Cerf
+  BodyImpactCapability:
+    maxForce: 120
+    impactForce: 95
+    precision: 1.0
+  BodyContactSurfaces:
+    front_hoof -> front_legs
+  BodyImpact:
+    contactRole: front_hoof
+    targetEntity: Humain
+    targetBodyPart: right_leg
+```
+
+Un role non declare ne peut pas etre utilise.
+Une partie du corps detruite ne peut plus produire ce contact.
+Les parties du corps n'ont pas de durabilite d'outil : elles ont une integrite corporelle et peuvent recevoir des blessures via les modules `Body`, `Impact` et `Injuries`.
+
 ## Module Impact
 
 Le module `Impact` modelise un contact physique sans logique d'attaque, de minage ou de gameplay.
@@ -467,6 +563,8 @@ Types principaux :
 - `ImpactResolutionSystem` : transforme force + surface + resistance en ratio et resultat.
 - `ImpactToBodyDamageSystem` : applique le resultat d'impact sur l'integrite d'une partie de corps ciblee.
 - `ImpactContactWearSystem` : use la partie de l'entite utilisee comme surface de contact.
+- `ImpactInjuryProfileComponent` : configure comment une cible transforme certains impacts en blessures.
+- `ImpactInjuryBridgeSystem` : cree ou aggrave une blessure a partir d'un impact resolu.
 
 Exemple conceptuel :
 
@@ -491,7 +589,10 @@ Silex taille
 Le materiau donne la base physique generale, mais la forme de l'entite donne ses proprietes de contact.
 Une plaque de metal et une tete d'outil peuvent donc partager un materiau tout en ayant des surfaces tres differentes.
 
-Dans la sandbox, la hache os-silex frappe le tronc de l'arbre pendant les ticks.
+Le pont `Impact -> Injury` reste configurable par entite.
+Un humain peut transformer une fracture du torse en blessure moderement hemorragique, tandis qu'un arbre transforme une coupe du tronc en fissure sans sang.
+
+Dans la sandbox, l'humain tient la hache os-silex et frappe le tronc du jeune arbre pendant les ticks.
 Le resultat d'impact reste generique (`KCut:1.68`) et le systeme reduit progressivement l'integrite du tronc.
 La tete en silex a son propre corps, donc elle s'use aussi et fait baisser l'integrite composite de la hache.
 
@@ -527,7 +628,7 @@ Exemple JSON :
 }
 ```
 
-Dans la sandbox, l'arbre a un corps simple, l'humain et le cerf ont un corps plus detaille.
+Dans la sandbox, le jeune arbre a un corps simple, l'humain et le cerf ont un corps plus detaille.
 Les objets comme l'eau, le fer ou la pierre n'ont pas de corps.
 
 ## Module Injuries
@@ -559,7 +660,7 @@ Exemple JSON :
 
 Une entite doit avoir un `BodyStateComponent` pour que les blessures affectent son corps.
 Une pierre, une ressource ou un objet sans corps peut ignorer totalement ce module.
-Dans la sandbox, l'arbre, l'humain et le cerf montrent des blessures initiales chargees depuis JSON.
+Dans la sandbox, le jeune arbre, l'humain et le cerf montrent des blessures initiales chargees depuis JSON.
 
 ## Module Vitals
 

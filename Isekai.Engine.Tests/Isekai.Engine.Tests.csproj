@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Isekai.Engine\Isekai.Engine.csproj" />
+    <ProjectReference Include="..\Isekai.Engine.Sandbox\Isekai.Engine.Sandbox.csproj" />
   </ItemGroup>
 
 </Project>

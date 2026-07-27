@@ -2,7 +2,9 @@ using Isekai.Engine.Core;
 using Isekai.Engine.Core.Definitions;
 using Isekai.Engine.Diagnostics;
 using Isekai.Engine.Modules.Body;
+using Isekai.Engine.Modules.Composition;
 using Isekai.Engine.Modules.Impact;
+using Isekai.Engine.Modules.Injuries;
 using Isekai.Engine.Modules.Materials;
 using Xunit;
 
@@ -115,6 +117,77 @@ public sealed class ImpactModuleTests
     }
 
     [Fact]
+    public void ImpactResolutionSystem_UsesSourceMassWithoutRequiringGameplayKnowledge()
+    {
+        var world = CreateWorld();
+        var contact = world.CreateEntity();
+        contact.AddComponent(new ContactSurfaceComponent(
+            Hardness: 1.5,
+            Sharpness: 1.2,
+            Penetration: 1.1,
+            EdgeRetention: 1.0,
+            ContactArea: 0.01));
+        var target = world.CreateEntity();
+        target.AddComponent(new ImpactResistanceComponent(1.0, 1.0, 1.0));
+        var lightSource = world.CreateEntity();
+        lightSource.AddComponent(new CompositeMassComponent(0.25));
+        lightSource.AddComponent(new ImpactRequestComponent(contact.Id, target.Id, Force: 60));
+        var heavySource = world.CreateEntity();
+        heavySource.AddComponent(new CompositeMassComponent(4.0));
+        heavySource.AddComponent(new ImpactRequestComponent(contact.Id, target.Id, Force: 60));
+
+        world.RegisterSystem(new ImpactResolutionSystem());
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        var lightResult = lightSource.GetComponent<ImpactResultComponent>();
+        var heavyResult = heavySource.GetComponent<ImpactResultComponent>();
+
+        Assert.True(heavyResult.ImpactRatio > lightResult.ImpactRatio);
+    }
+
+    [Fact]
+    public void ImpactResolutionSystem_DoesNotLowerEfficiencyFromPartialContactWear()
+    {
+        var world = CreateWorld();
+        var freshContact = CreateContactBody(world, integrity: 35);
+        freshContact.AddComponent(new ContactSurfaceComponent(1.2, 1.8, 1.4, 0.5, 0.012));
+        var wornContact = CreateContactBody(world, integrity: 4);
+        wornContact.AddComponent(new ContactSurfaceComponent(1.2, 1.8, 1.4, 0.5, 0.012));
+        var target = world.CreateEntity();
+        target.AddComponent(new ImpactResistanceComponent(0.8, 1.2, 0.9));
+        var freshSource = world.CreateEntity();
+        freshSource.AddComponent(new ImpactRequestComponent(freshContact.Id, target.Id, Force: 45));
+        var wornSource = world.CreateEntity();
+        wornSource.AddComponent(new ImpactRequestComponent(wornContact.Id, target.Id, Force: 45));
+
+        world.RegisterSystem(new ImpactResolutionSystem());
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        var freshResult = freshSource.GetComponent<ImpactResultComponent>();
+        var wornResult = wornSource.GetComponent<ImpactResultComponent>();
+
+        Assert.Equal(freshResult.ImpactRatio, wornResult.ImpactRatio, precision: 10);
+        Assert.Equal(freshResult.Outcome, wornResult.Outcome);
+    }
+
+    [Fact]
+    public void ImpactResolutionSystem_IgnoresDestroyedContactSurface()
+    {
+        var world = CreateWorld();
+        var destroyedContact = CreateContactBody(world, integrity: 0);
+        destroyedContact.AddComponent(new ContactSurfaceComponent(1.2, 1.8, 1.4, 0.5, 0.012));
+        var target = world.CreateEntity();
+        target.AddComponent(new ImpactResistanceComponent(0.8, 1.2, 0.9));
+        var source = world.CreateEntity();
+        source.AddComponent(new ImpactRequestComponent(destroyedContact.Id, target.Id, Force: 45));
+
+        world.RegisterSystem(new ImpactResolutionSystem());
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        Assert.False(source.HasComponent<ImpactResultComponent>());
+    }
+
+    [Fact]
     public void ImpactResolutionSystem_PublishesImpactResolvedEvent()
     {
         var world = CreateWorld();
@@ -223,6 +296,41 @@ public sealed class ImpactModuleTests
         Assert.True(contact.GetComponent<BodyIntegrityComponent>().NormalizedIntegrity < 1);
     }
 
+    [Fact]
+    public void ImpactInjuryBridgeSystem_AddsConfiguredInjuryToTarget()
+    {
+        var world = CreateWorld();
+        var target = CreateBodyTarget(world);
+        target.AddComponent(new ImpactInjuryProfileComponent(new[]
+        {
+            new ImpactInjuryRule(
+                ImpactOutcome.Cut,
+                DefinitionReference<InjuryDefinition>.From("injury.cut"),
+                MinimumSeverity: 0.2,
+                SeverityPerImpactRatio: 0.1,
+                BleedingSeverity.Moderate)
+        }));
+        var source = world.CreateEntity();
+        source.AddComponent(new ImpactRequestComponent(EntityId.New(), target.Id, Force: 45, TargetBodyPartId: "trunk"));
+        source.AddComponent(new ImpactResultComponent(
+            EntityId.New(),
+            target.Id,
+            "trunk",
+            Force: 45,
+            ImpactRatio: 2,
+            ImpactOutcome.Cut));
+
+        world.RegisterSystem(new ImpactInjuryBridgeSystem());
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        var injury = target.GetComponent<InjuryComponent>().Injuries.Single();
+
+        Assert.Equal("injury.cut", injury.Injury.Id.Value);
+        Assert.Equal("trunk", injury.BodyPartId);
+        Assert.Equal(0.4, injury.Severity, precision: 10);
+        Assert.Equal(BleedingSeverity.Moderate, injury.BleedingSeverity);
+    }
+
     private static WorldState CreateWorld()
     {
         var registry = new DefinitionRegistry();
@@ -256,6 +364,11 @@ public sealed class ImpactModuleTests
                     DefinitionReference<MaterialDefinition>.From("material.test"),
                     MaxIntegrity: 35)
             }));
+        registry.Register(new InjuryDefinition(
+            DefinitionId.From("injury.cut"),
+            "Cut",
+            IntegrityLossPerSeverityPerSecond: 0.2,
+            BleedingSeverity.Moderate));
         registry.Freeze();
 
         return new WorldState(
@@ -280,16 +393,16 @@ public sealed class ImpactModuleTests
         return entity;
     }
 
-    private static Entity CreateContactBody(WorldState world)
+    private static Entity CreateContactBody(WorldState world, double integrity = 35)
     {
         var entity = world.CreateEntity();
         entity.AddComponent(new BodyStateComponent(
             DefinitionReference<BodyDefinition>.From("body.contact"),
             new[]
             {
-                new BodyPartState("edge", Integrity: 35, MaxIntegrity: 35)
+                new BodyPartState("edge", integrity, MaxIntegrity: 35)
             }));
-        entity.AddComponent(new BodyIntegrityComponent(1));
+        entity.AddComponent(new BodyIntegrityComponent(Math.Clamp(integrity / 35, 0, 1)));
 
         return entity;
     }

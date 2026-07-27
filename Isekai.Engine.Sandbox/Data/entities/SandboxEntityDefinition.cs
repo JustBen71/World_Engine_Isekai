@@ -20,4 +20,11 @@ public sealed record SandboxEntityDefinition(
     SandboxCompositeData? Composite,
     SandboxContactSurfaceData? ContactSurface,
     SandboxImpactResistanceData? ImpactResistance,
-    SandboxImpactRequestData? Impact);
+    SandboxImpactInjuryProfileData? ImpactInjuryProfile,
+    SandboxImpactRequestData? Impact,
+    SandboxGripCapabilityData? GripCapability,
+    SandboxHeldEntityData[]? HeldEntities,
+    SandboxHandledImpactData? HandledImpact,
+    SandboxBodyImpactCapabilityData? BodyImpactCapability,
+    SandboxBodyContactSurfaceData[]? BodyContactSurfaces,
+    SandboxBodyImpactData? BodyImpact);

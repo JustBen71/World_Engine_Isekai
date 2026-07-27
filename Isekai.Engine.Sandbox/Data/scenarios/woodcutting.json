@@ -1,0 +1,98 @@
+{
+  "entities": [
+    {
+      "name": "Jeune arbre",
+      "glyph": "\ud83c\udf33",
+      "material": "material.wood",
+      "body": "body.tree.young",
+      "volume": 0.9,
+      "position": { "x": 5, "y": 3 },
+      "temperature": 18.0,
+      "impactResistance": { "hardness": 0.45, "toughness": 0.55, "fractureResistance": 0.45 },
+      "impactInjuryProfile": {
+        "rules": [
+          {
+            "outcome": "Cut",
+            "injury": "injury.generic.wood_crack",
+            "minimumSeverity": 0.2,
+            "severityPerImpactRatio": 0.08,
+            "bleedingSeverity": "None"
+          },
+          {
+            "outcome": "Fracture",
+            "injury": "injury.generic.wood_crack",
+            "minimumSeverity": 0.45,
+            "severityPerImpactRatio": 0.1,
+            "bleedingSeverity": "None"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Humain",
+      "glyph": "\ud83e\uddcd",
+      "material": "material.flesh",
+      "body": "body.human.basic",
+      "volume": 0.075,
+      "position": { "x": 4, "y": 4 },
+      "temperature": 36.8,
+      "thermalSensitivity": { "comfortableMinimum": 36.0, "comfortableMaximum": 38.0 },
+      "blood": { "currentVolumeLiters": 5.0, "maxVolumeLiters": 5.0 },
+      "gripCapability": { "maxGripForce": 70, "manipulationForce": 45, "precision": 0.9 },
+      "heldEntities": [{ "entity": "Hache os-silex", "slot": "right_hand", "gripQuality": 0.85 }],
+      "handledImpact": {
+        "heldEntity": "Hache os-silex",
+        "contactEntity": "Silex taille",
+        "targetEntity": "Jeune arbre",
+        "effort": 1.0,
+        "ticksRemaining": 30,
+        "ticksBetweenImpacts": 3,
+        "targetBodyPart": "trunk"
+      }
+    },
+    {
+      "name": "Os long",
+      "glyph": "\ud83e\uddb4",
+      "material": "material.bone",
+      "body": "body.tool.bone_handle",
+      "volume": 0.001,
+      "temperature": 18.0
+    },
+    {
+      "name": "Silex taille",
+      "glyph": "\ud83e\udea8",
+      "material": "material.flint",
+      "body": "body.tool.flint_head",
+      "volume": 0.0003,
+      "temperature": 18.0,
+      "contactSurface": {
+        "hardness": 1.2,
+        "sharpness": 1.8,
+        "penetration": 1.4,
+        "edgeRetention": 0.5,
+        "contactArea": 0.012
+      }
+    },
+    {
+      "name": "Liane jungle",
+      "glyph": "\ud83e\uddf5",
+      "material": "material.vine",
+      "body": "body.tool.vine_binding",
+      "volume": 0.00005,
+      "temperature": 18.0
+    },
+    {
+      "name": "Hache os-silex",
+      "glyph": "\ud83e\ude93",
+      "materials": [],
+      "temperature": 18.0,
+      "composite": {
+        "parts": [
+          { "role": "body", "entity": "Os long", "isStructural": true },
+          { "role": "head", "entity": "Silex taille", "isStructural": true },
+          { "role": "binding", "entity": "Liane jungle", "isStructural": true }
+        ]
+      }
+    }
+  ]
+}
