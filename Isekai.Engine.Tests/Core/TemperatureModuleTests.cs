@@ -1,6 +1,7 @@
 using Isekai.Engine.Core;
 using Isekai.Engine.Core.Definitions;
 using Isekai.Engine.Diagnostics;
+using Isekai.Engine.Interfaces;
 using Isekai.Engine.Modules.Materials;
 using Isekai.Engine.Modules.Temperature;
 using Xunit;
@@ -15,31 +16,58 @@ public sealed class TemperatureModuleTests
     [Fact]
     public void TemperatureExchangeSystem_WarmsEntityTowardAmbientTemperature()
     {
-        var world = CreateWorldWithAmbient(20);
-        var entity = CreateMaterialEntity(world, 0);
+        var world = CreateWorldWithAmbient(30);
+        var entity = CreateMaterialEntity(world, 10);
 
         world.RegisterSystem(new TemperatureExchangeSystem());
         world.Tick(TimeSpan.FromSeconds(1));
 
         var temperature = entity.GetComponent<TemperatureComponent>();
 
-        Assert.True(temperature.Celsius > 0);
-        Assert.True(temperature.Celsius < 20);
+        Assert.True(temperature.Celsius > 10);
+        Assert.True(temperature.Celsius <= 30);
     }
 
     [Fact]
     public void TemperatureExchangeSystem_CoolsEntityTowardAmbientTemperature()
     {
-        var world = CreateWorldWithAmbient(10);
-        var entity = CreateMaterialEntity(world, 40);
+        var world = CreateWorldWithAmbient(0);
+        var entity = CreateMaterialEntity(world, 30);
 
         world.RegisterSystem(new TemperatureExchangeSystem());
         world.Tick(TimeSpan.FromSeconds(1));
 
         var temperature = entity.GetComponent<TemperatureComponent>();
 
-        Assert.True(temperature.Celsius < 40);
-        Assert.True(temperature.Celsius > 10);
+        Assert.True(temperature.Celsius < 30);
+        Assert.True(temperature.Celsius >= 0);
+    }
+
+    [Fact]
+    public void TemperatureExchangeSystem_DoesNotOvershootAmbientTemperature()
+    {
+        var world = CreateWorldWithAmbient(30);
+        var entity = CreateMaterialEntity(world, 10);
+
+        world.RegisterSystem(new TemperatureExchangeSystem());
+        world.Tick(TimeSpan.FromSeconds(1_000));
+
+        var temperature = entity.GetComponent<TemperatureComponent>();
+
+        Assert.Equal(30, temperature.Celsius);
+    }
+
+    [Fact]
+    public void TemperatureExchangeSystem_IgnoresEntityWithoutTemperature()
+    {
+        var world = CreateWorldWithAmbient(30);
+        var entity = world.CreateEntity();
+        entity.AddComponent(new AmbientTemperatureComponent(10));
+
+        world.RegisterSystem(new TemperatureExchangeSystem());
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        Assert.False(entity.HasComponent<TemperatureComponent>());
     }
 
     [Fact]
@@ -77,6 +105,86 @@ public sealed class TemperatureModuleTests
     }
 
     [Fact]
+    public void TemperatureExchangeSystem_DoesNotCreateComfortForInsensitiveEntity()
+    {
+        var world = CreateWorldWithAmbient(30);
+        var entity = CreateMaterialEntity(world, 10);
+
+        world.RegisterSystem(new TemperatureExchangeSystem());
+        world.RegisterSystem(new ThermalComfortSystem());
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        Assert.True(entity.GetComponent<TemperatureComponent>().Celsius > 10);
+        Assert.False(entity.HasComponent<ThermalComfortComponent>());
+    }
+
+    [Fact]
+    public void ThermalComfortSystem_CreatesCoherentComfortForSensitiveEntity()
+    {
+        var world = CreateWorldWithAmbient(20);
+        var entity = CreateMaterialEntity(world, 34);
+        entity.AddComponent(new ThermalSensitivityComponent(36, 38));
+
+        world.RegisterSystem(new ThermalComfortSystem());
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        var comfort = entity.GetComponent<ThermalComfortComponent>();
+
+        Assert.InRange(comfort.Comfort, 0, 1);
+        Assert.True(comfort.ColdStress > 0);
+        Assert.Equal(0, comfort.HeatStress);
+    }
+
+    [Fact]
+    public void TemperatureExchangeSystem_UsesCustomAmbientProvider()
+    {
+        var world = CreateWorldWithAmbient(-50);
+        var entity = CreateMaterialEntity(world, 10);
+
+        world.RegisterSystem(new TemperatureExchangeSystem(new FixedAmbientTemperatureProvider(40)));
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        var temperature = entity.GetComponent<TemperatureComponent>();
+
+        Assert.True(temperature.Celsius > 10);
+        Assert.True(temperature.Celsius <= 40);
+    }
+
+    [Fact]
+    public void ComponentAmbientTemperatureProvider_ReproducesExistingAmbientComponentBehavior()
+    {
+        var world = CreateWorldWithAmbient(26.5);
+        var entity = CreateMaterialEntity(world, 10);
+        var provider = new ComponentAmbientTemperatureProvider();
+
+        var ambient = provider.GetAmbientTemperatureCelsius(world, entity);
+
+        Assert.Equal(26.5, ambient);
+    }
+
+    [Fact]
+    public void TemperatureExchangeSystem_IsDeterministic()
+    {
+        var first = CreateWorldWithAmbient(10);
+        var second = CreateWorldWithAmbient(10);
+        var firstEntity = CreateMaterialEntity(first, 5);
+        var secondEntity = CreateMaterialEntity(second, 5);
+
+        first.RegisterSystem(new TemperatureExchangeSystem(new FixedAmbientTemperatureProvider(30)));
+        second.RegisterSystem(new TemperatureExchangeSystem(new FixedAmbientTemperatureProvider(30)));
+
+        for (var i = 0; i < 10; i++)
+        {
+            first.Tick(TimeSpan.FromSeconds(0.5));
+            second.Tick(TimeSpan.FromSeconds(0.5));
+        }
+
+        Assert.Equal(
+            firstEntity.GetComponent<TemperatureComponent>().Celsius,
+            secondEntity.GetComponent<TemperatureComponent>().Celsius);
+    }
+
+    [Fact]
     public void TemperatureModule_RegistersTemperatureSystems()
     {
         var world = CreateWorldWithAmbient(20);
@@ -86,6 +194,19 @@ public sealed class TemperatureModuleTests
 
         Assert.Contains(world.Systems, system => system is TemperatureExchangeSystem);
         Assert.Contains(world.Systems, system => system is ThermalComfortSystem);
+    }
+
+    [Fact]
+    public void TemperatureModule_AcceptsExplicitAmbientProvider()
+    {
+        var world = CreateWorldWithAmbient(0);
+        var entity = CreateMaterialEntity(world, 10);
+        var module = new TemperatureModule(new FixedAmbientTemperatureProvider(30));
+
+        module.RegisterSystems(world);
+        world.Tick(TimeSpan.FromSeconds(1));
+
+        Assert.True(entity.GetComponent<TemperatureComponent>().Celsius > 10);
     }
 
     private static WorldState CreateWorldWithAmbient(double ambientCelsius)
@@ -122,5 +243,20 @@ public sealed class TemperatureModuleTests
         }));
 
         return entity;
+    }
+
+    private sealed class FixedAmbientTemperatureProvider : IAmbientTemperatureProvider
+    {
+        private readonly double _ambientTemperatureCelsius;
+
+        public FixedAmbientTemperatureProvider(double ambientTemperatureCelsius)
+        {
+            _ambientTemperatureCelsius = ambientTemperatureCelsius;
+        }
+
+        public double GetAmbientTemperatureCelsius(IWorldState world, Entity entity)
+        {
+            return _ambientTemperatureCelsius;
+        }
     }
 }

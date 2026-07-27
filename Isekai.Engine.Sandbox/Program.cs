@@ -35,9 +35,9 @@ try
     AnsiConsole.MarkupLine($"[bold green]Scenario:[/] {Markup.Escape(scenario.Name)}");
     AnsiConsole.MarkupLine($"[grey]{Markup.Escape(scenario.Description)}[/]");
 
-    var modules = CreateModules();
-    var definitions = LoadDefinitions(dataDirectory, modules, logger);
     var map = new SandboxMap(width, height);
+    var modules = CreateModules(scenario, map);
+    var definitions = LoadDefinitions(dataDirectory, modules, logger);
     var world = CreateWorld(definitions, logger, map, modules, entityFile);
     var renderer = new SpectreWorldRenderer(map, frameDelayMilliseconds: 250);
 
@@ -95,8 +95,12 @@ static ITraceLogger CreateLogger(string[] args)
         : NoOpTraceLogger.Instance;
 }
 
-static IReadOnlyCollection<IEngineModule> CreateModules()
+static IReadOnlyCollection<IEngineModule> CreateModules(SandboxScenario scenario, SandboxMap map)
 {
+    IAmbientTemperatureProvider ambientProvider = scenario.UseLocalAmbientTemperatureProvider
+        ? new SandboxZoneAmbientTemperatureProvider(map.Width)
+        : new ComponentAmbientTemperatureProvider();
+
     return new IEngineModule[]
     {
         new BodyModule(),
@@ -108,7 +112,7 @@ static IReadOnlyCollection<IEngineModule> CreateModules()
         new BodyCapabilitiesModule(),
         new ImpactModule(),
         new VitalsModule(),
-        new TemperatureModule()
+        new TemperatureModule(ambientProvider)
     };
 }
 

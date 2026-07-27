@@ -8,14 +8,23 @@ namespace Isekai.Engine.Modules.Temperature;
 /// </summary>
 public sealed class TemperatureExchangeSystem : IWorldSystem
 {
-    private readonly double _fallbackAmbientCelsius;
+    private readonly IAmbientTemperatureProvider _ambientTemperatureProvider;
 
     /// <summary>
     /// Creates a temperature exchange system.
     /// </summary>
     public TemperatureExchangeSystem(double fallbackAmbientCelsius = 20)
+        : this(new ComponentAmbientTemperatureProvider(fallbackAmbientCelsius))
     {
-        _fallbackAmbientCelsius = fallbackAmbientCelsius;
+    }
+
+    /// <summary>
+    /// Creates a temperature exchange system with an explicit ambient temperature provider.
+    /// </summary>
+    public TemperatureExchangeSystem(IAmbientTemperatureProvider ambientTemperatureProvider)
+    {
+        _ambientTemperatureProvider = ambientTemperatureProvider ??
+                                      throw new ArgumentNullException(nameof(ambientTemperatureProvider));
     }
 
     /// <inheritdoc />
@@ -23,27 +32,64 @@ public sealed class TemperatureExchangeSystem : IWorldSystem
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var ambient = ResolveAmbientTemperature(context);
-        var deltaSeconds = Math.Max(0, context.DeltaTime.TotalSeconds);
+        var deltaSeconds = ResolveDeltaSeconds(context);
 
         foreach (var entity in context.World.EntitiesWith<TemperatureComponent>())
         {
             var current = entity.GetComponent<TemperatureComponent>();
+            if (!double.IsFinite(current.Celsius))
+            {
+                continue;
+            }
+
+            var ambient = _ambientTemperatureProvider.GetAmbientTemperatureCelsius(context.World, entity);
+            if (!double.IsFinite(ambient))
+            {
+                continue;
+            }
+
             var rate = ResolveExchangeRate(context, entity);
-            var factor = Math.Clamp(rate * deltaSeconds, 0, 1);
-            var next = current.Celsius + ((ambient - current.Celsius) * factor);
+            var next = CalculateNextTemperature(current.Celsius, ambient, rate, deltaSeconds);
 
             entity.SetComponent(new TemperatureComponent(next));
         }
     }
 
-    private double ResolveAmbientTemperature(WorldSystemExecutionContext context)
+    private static double ResolveDeltaSeconds(WorldSystemExecutionContext context)
     {
-        var ambientEntity = context.World.EntitiesWith<AmbientTemperatureComponent>().FirstOrDefault();
-        return ambientEntity?.GetComponent<AmbientTemperatureComponent>().Celsius ?? _fallbackAmbientCelsius;
+        var deltaSeconds = context.DeltaTime.TotalSeconds;
+        return double.IsFinite(deltaSeconds) ? Math.Max(0, deltaSeconds) : 0;
     }
 
-    private double ResolveExchangeRate(WorldSystemExecutionContext context, Core.Entity entity)
+    private static double CalculateNextTemperature(
+        double currentTemperatureCelsius,
+        double ambientTemperatureCelsius,
+        double exchangeRatePerSecond,
+        double deltaSeconds)
+    {
+        if (deltaSeconds <= 0)
+        {
+            return currentTemperatureCelsius;
+        }
+
+        var safeRate = double.IsFinite(exchangeRatePerSecond)
+            ? Math.Max(0, exchangeRatePerSecond)
+            : 0;
+        var factor = Math.Clamp(safeRate * deltaSeconds, 0, 1);
+        var next = currentTemperatureCelsius +
+                   ((ambientTemperatureCelsius - currentTemperatureCelsius) * factor);
+
+        if (!double.IsFinite(next))
+        {
+            return currentTemperatureCelsius;
+        }
+
+        return ambientTemperatureCelsius >= currentTemperatureCelsius
+            ? Math.Clamp(next, currentTemperatureCelsius, ambientTemperatureCelsius)
+            : Math.Clamp(next, ambientTemperatureCelsius, currentTemperatureCelsius);
+    }
+
+    private static double ResolveExchangeRate(WorldSystemExecutionContext context, Core.Entity entity)
     {
         if (!entity.TryGetComponent<MaterialCompositionComponent>(out var composition) ||
             composition is null ||
@@ -62,7 +108,10 @@ public sealed class TemperatureExchangeSystem : IWorldSystem
             heatCapacity += material.Density * quantity.Volume * material.SpecificHeatCapacity;
         }
 
-        if (heatCapacity <= 0)
+        if (!double.IsFinite(conductance) ||
+            !double.IsFinite(heatCapacity) ||
+            conductance < 0 ||
+            heatCapacity <= 0)
         {
             return 0.05;
         }

@@ -60,7 +60,14 @@ public static class SandboxScenarioRegistry
             "Materiaux et temperature",
             "Eau, fer et pierre convergent vers l'ambiance selon leurs proprietes thermiques.",
             "thermal_materials.json",
-            35)
+            35),
+        new(
+            "thermal-zones",
+            "Zones thermiques locales",
+            "Trois entites identiques evoluent vers des ambiances froides, temperees et chaudes selon leur position.",
+            "thermal_zones.json",
+            30,
+            UseLocalAmbientTemperatureProvider: true)
     ];
 
     /// <summary>

@@ -1,0 +1,25 @@
+{
+  "entities": [
+    {
+      "name": "Temoin zone froide",
+      "glyph": "\ud83e\uddcd",
+      "position": { "x": 3, "y": 2 },
+      "temperature": 20.0,
+      "thermalSensitivity": { "comfortableMinimum": 18.0, "comfortableMaximum": 26.0 }
+    },
+    {
+      "name": "Temoin zone temperee",
+      "glyph": "\ud83e\uddcd",
+      "position": { "x": 14, "y": 2 },
+      "temperature": 20.0,
+      "thermalSensitivity": { "comfortableMinimum": 18.0, "comfortableMaximum": 26.0 }
+    },
+    {
+      "name": "Temoin zone chaude",
+      "glyph": "\ud83e\uddcd",
+      "position": { "x": 25, "y": 2 },
+      "temperature": 20.0,
+      "thermalSensitivity": { "comfortableMinimum": 18.0, "comfortableMaximum": 26.0 }
+    }
+  ]
+}

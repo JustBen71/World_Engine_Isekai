@@ -8,4 +8,5 @@ public sealed record SandboxScenario(
     string Name,
     string Description,
     string EntityFileName,
-    int DefaultTicks);
+    int DefaultTicks,
+    bool UseLocalAmbientTemperatureProvider = false);

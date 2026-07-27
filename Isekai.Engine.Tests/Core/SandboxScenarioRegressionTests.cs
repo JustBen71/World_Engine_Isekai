@@ -156,9 +156,31 @@ public sealed class SandboxScenarioRegressionTests
         Assert.True(FindByName(world, "Pierre tiede").GetComponent<TemperatureComponent>().Celsius < 28.0);
     }
 
-    private static WorldState CreateScenarioWorld(string scenarioFileName)
+    [Fact]
+    public void ThermalZonesScenario_UsesLocalAmbientTemperatures()
     {
-        var modules = CreateModules();
+        var world = CreateScenarioWorld(
+            "thermal_zones.json",
+            new SandboxZoneAmbientTemperatureProvider(30));
+
+        Tick(world, 30);
+
+        var cold = FindByName(world, "Temoin zone froide").GetComponent<TemperatureComponent>().Celsius;
+        var temperate = FindByName(world, "Temoin zone temperee").GetComponent<TemperatureComponent>().Celsius;
+        var hot = FindByName(world, "Temoin zone chaude").GetComponent<TemperatureComponent>().Celsius;
+
+        Assert.True(cold < temperate);
+        Assert.True(temperate < hot);
+        Assert.True(cold < 20);
+        Assert.InRange(temperate, 19.5, 20.5);
+        Assert.True(hot > 20);
+    }
+
+    private static WorldState CreateScenarioWorld(
+        string scenarioFileName,
+        IAmbientTemperatureProvider? ambientTemperatureProvider = null)
+    {
+        var modules = CreateModules(ambientTemperatureProvider);
         var definitions = LoadDefinitions(modules);
         var map = new SandboxMap(30, 7);
         var world = new WorldState(
@@ -186,7 +208,8 @@ public sealed class SandboxScenarioRegressionTests
         return world;
     }
 
-    private static IReadOnlyCollection<IEngineModule> CreateModules()
+    private static IReadOnlyCollection<IEngineModule> CreateModules(
+        IAmbientTemperatureProvider? ambientTemperatureProvider = null)
     {
         return new IEngineModule[]
         {
@@ -199,7 +222,7 @@ public sealed class SandboxScenarioRegressionTests
             new BodyCapabilitiesModule(),
             new ImpactModule(),
             new VitalsModule(),
-            new TemperatureModule()
+            new TemperatureModule(ambientTemperatureProvider ?? new ComponentAmbientTemperatureProvider())
         };
     }
 
